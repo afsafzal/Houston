@@ -22,10 +22,11 @@ class ArduCopter(BaseSystem):
     state = State
     sandbox = Sandbox
     configuration = Configuration
-    commands = [
-        GoTo,
-        Takeoff,
-        ArmDisarm,
-        SetMode,
-        Parachute,
-        *read_commands_yml()]
+#    commands = [
+#        GoTo,
+#        Takeoff,
+#        ArmDisarm,
+#        SetMode,
+#        Parachute
+#        ]
+    commands = read_commands_yml()
