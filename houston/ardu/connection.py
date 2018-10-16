@@ -70,7 +70,7 @@ class MAVLinkConnection(Connection[MAVLinkGeneralMessage]):
         self.__conn = dronekit.connect(url, wait_ready=True)
         self.__conn.wait_ready('autopilot_version')
 
-        def recv(s, name, message):
+        def recv(s, name: str, message):  # FIXME external types
             m = MAVLinkMessage(name, message)
             self.receive(m)
         self.__conn.add_message_listener('*', recv)
