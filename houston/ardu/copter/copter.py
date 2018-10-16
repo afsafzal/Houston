@@ -8,6 +8,7 @@ from .goto import GoTo
 from .setmode import SetMode
 from .takeoff import Takeoff
 from .parachute import Parachute
+from .command_factory import create_command
 from ..base import BaseSystem
 from ..common import ArmDisarm
 from ..configuration import Configuration
@@ -26,5 +27,6 @@ class ArduCopter(BaseSystem):
         Takeoff,
         ArmDisarm,
         SetMode,
-        Parachute
+        Parachute,
+        create_command()
     ]
