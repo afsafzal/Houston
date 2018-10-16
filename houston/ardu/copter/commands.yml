@@ -1,0 +1,35 @@
+commands:
+  - name: MAV_CMD_NAV_WAYPOINT
+    id: 16
+    p1:
+        name: delay
+        value:
+            type: continous
+            min: 0.0
+            max: 10.0
+    p5:
+        name: lat
+        value:
+            type: continous
+            min: -90.0
+            max: 90.0
+    p6:
+        name: lon
+        value:
+            type: continous
+            min: -180.0
+            max: 180.0
+    p7:
+        name: alt
+        value:
+            type: continous
+            min: 0.0
+            max: 15.0
+  - name: MAV_CMD_NAV_TAKEOFF
+    id: 22
+    p7:
+        name: alt
+        value:
+            type: continous
+            min: 0.3
+            max: 15.0
