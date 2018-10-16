@@ -253,7 +253,8 @@ class Sandbox(BaseSandbox):
                     # self.observe()
                     logger.debug("STATE: {}".format(self.state))
                     current_time = timer()
-                    wp_state[last_wp[0]] = (self.state, current_time - time_start)
+                    time_passed = current_time - time_start
+                    wp_state[last_wp[0]] = (self.state, time_passed)
                     time_start = current_time
                     event.clear()
 
