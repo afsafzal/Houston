@@ -1,3 +1,4 @@
+import os
 import logging
 import yaml
 from typing import Dict, Any, Type
@@ -51,12 +52,14 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
 
     C = CommandMeta(name, (Command,), ns)
 
-    print(C)
+    logger.info("Command class generated: %s", C)
     return C
 
 def read_commands_yml():
     all_commands = []
-    with open('houston/ardu/copter/commands.yml', 'r') as f:
+    dirname = os.path.dirname(__file__)
+    filename = os.path.join(dirname, 'commands.yml')
+    with open(filename, 'r') as f:
         all_commands = yaml.load(f)['commands']
     classes = []
     for command in all_commands:
