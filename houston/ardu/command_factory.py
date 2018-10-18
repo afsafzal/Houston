@@ -1,36 +1,56 @@
 import os
 import logging
 import yaml
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type, List
 
-from ..connection import CommandLong
-from ...valueRange import ContinuousValueRange, DiscreteValueRange
-from ...command import Parameter, Command, CommandMeta
-from ...specification import Idle 
+from .connection import CommandLong
+from ..valueRange import ContinuousValueRange, DiscreteValueRange
+from ..command import Parameter, Command, CommandMeta
+from ..specification import Idle 
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 def create_command(command: Dict[str, Any]) -> Type[Command]:
-    name = command['name']
-    id = command['id']
+    """
+    From a given dictionary, generates the Command class.
+    """
+    try:
+        name = command['name']
+    except KeyError:
+        msg = "missing 'name' field of Command"
+        raise TypeError(msg)
+    try:
+        id = command['id']
+    except KeyError:
+        msg = "missing 'id' field of Command"
+        raise TypeError(msg)
     parameters = []
     params_name = {}
     for i in range(1,8):
         p = 'p{}'.format(i)
         if p in command:
             param = None
-            p_name = command[p]['name']
-            if command[p]['value']['type'] == 'discrete':
+            try:
+                p_name = command[p]['name']
+            except KeyError:
+                msg = "missing 'name' field of Command parameter {}".format(p) 
+                raise TypeError(msg)
+            try:
+                typ = command[p]['value']['type']
+            except KeyError:
+                msg = "missing 'name' field of Command parameter {}".format(p)
+                raise TypeError(msg)
+            if typ == 'discrete':
                 vals = command[p]['value']['vals']
                 param = Parameter(p_name, DiscreteValueRange(vals))
-            elif command[p]['value']['type'] == 'continous':
+            elif typ == 'continous':
                 min_value = command[p]['value']['min']
                 max_value = command[p]['value']['max']
                 param = Parameter(p_name, ContinuousValueRange(min_value, max_value, True))
             else:
-                logger.error("The type of value not supported")
-                raise Exception
+                msg = "The type of value {} is not supported".format(typ)
+                raise Exception(msg)
             parameters.append(param)
             params_name['param_{}'.format(i)] = p_name
         else:
@@ -55,10 +75,13 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
     logger.info("Command class generated: %s", C)
     return C
 
-def read_commands_yml():
+
+def read_commands_yml(filename: str) -> List[Type[Command]]:
+    """
+    Reads a yaml file provided by filename and creates
+    Command classes and returns a list of those classes.
+    """
     all_commands = []
-    dirname = os.path.dirname(__file__)
-    filename = os.path.join(dirname, 'commands.yml')
     with open(filename, 'r') as f:
         all_commands = yaml.load(f)['commands']
     classes = []
@@ -66,4 +89,3 @@ def read_commands_yml():
         command_class = create_command(command)
         classes.append(command_class)
     return classes
-
