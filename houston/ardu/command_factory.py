@@ -6,10 +6,11 @@ from typing import Dict, Any, Type, List
 from .connection import CommandLong
 from ..valueRange import ContinuousValueRange, DiscreteValueRange
 from ..command import Parameter, Command, CommandMeta
-from ..specification import Idle 
+from ..specification import Idle
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
+
 
 def create_command(command: Dict[str, Any]) -> Type[Command]:
     """
@@ -27,14 +28,14 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
         raise TypeError(msg)
     parameters = []
     params_name = {}
-    for i in range(1,8):
+    for i in range(1, 8):
         p = 'p{}'.format(i)
         if p in command:
             param = None
             try:
                 p_name = command[p]['name']
             except KeyError:
-                msg = "missing 'name' field of Command parameter {}".format(p) 
+                msg = "missing 'name' field of Command parameter {}".format(p)
                 raise TypeError(msg)
             try:
                 typ = command[p]['value']['type']
@@ -47,7 +48,9 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
             elif typ == 'continous':
                 min_value = command[p]['value']['min']
                 max_value = command[p]['value']['max']
-                param = Parameter(p_name, ContinuousValueRange(min_value, max_value, True))
+                param = Parameter(p_name, ContinuousValueRange(min_value,
+                                                               max_value,
+                                                               True))
             else:
                 msg = "The type of value {} is not supported".format(typ)
                 raise Exception(msg)
