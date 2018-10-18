@@ -40,7 +40,8 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
             try:
                 typ = command[p]['value']['type']
             except KeyError:
-                msg = "missing 'value' or 'type' field of Command parameter {}".format(p)
+                msg = "missing 'value' or 'type' field of Command parameter {}"
+                msg = msg.format(p)
                 raise TypeError(msg)
             if typ == 'discrete':
                 vals = command[p]['value']['vals']
