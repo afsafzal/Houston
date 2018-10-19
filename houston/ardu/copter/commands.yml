@@ -4,25 +4,25 @@ commands:
     p1:
         name: delay
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 10.0
     p5:
         name: lat
         value:
-            type: continous
+            type: continuous
             min: -90.0
             max: 90.0
     p6:
         name: lon
         value:
-            type: continous
+            type: continuous
             min: -180.0
             max: 180.0
     p7:
         name: alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
   - name: MAV_CMD_NAV_TAKEOFF
@@ -30,7 +30,7 @@ commands:
     p7:
         name: alt
         value:
-            type: continous
+            type: continuous
             min: 0.3
             max: 15.0
   - name: MAV_CMD_NAV_LOITER_UNLIM
@@ -38,19 +38,19 @@ commands:
     p5:
         name: lat
         value:
-            type: continous
+            type: continuous
             min: -90.0
             max: 90.0
     p6:
         name: lon
         value:
-            type: continous
+            type: continuous
             min: -180.0
             max: 180.0
     p7:
         name: alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
   - name: MAV_CMD_NAV_LOITER_TURNS
@@ -58,19 +58,19 @@ commands:
     p5:
         name: lat
         value:
-            type: continous
+            type: continuous
             min: -90.0
             max: 90.0
     p6:
         name: lon
         value:
-            type: continous
+            type: continuous
             min: -180.0
             max: 180.0
     p7:
         name: alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
   - name: MAV_CMD_NAV_LOITER_TIME
@@ -78,25 +78,25 @@ commands:
     p1:
         name: time
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 20.0
     p5:
         name: lat
         value:
-            type: continous
+            type: continuous
             min: -90.0
             max: 90.0
     p6:
         name: lon
         value:
-            type: continous
+            type: continuous
             min: -180.0
             max: 180.0
     p7:
         name: alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
   - name: MAV_CMD_NAV_RETURN_TO_LAUNCH
@@ -106,13 +106,13 @@ commands:
     p5:
         name: lat
         value:
-            type: continous
+            type: continuous
             min: -90.0
             max: 90.0
     p6:
         name: lon
         value:
-            type: continous
+            type: continuous
             min: -180.0
             max: 180.0
   - name: MAV_CMD_NAV_SPLINE_WAYPOINT
@@ -120,25 +120,25 @@ commands:
     p1:
         name: delay
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 10.0
     p5:
         name: lat
         value:
-            type: continous
+            type: continuous
             min: -90.0
             max: 90.0
     p6:
         name: lon
         value:
-            type: continous
+            type: continuous
             min: -180.0
             max: 180.0
     p7:
         name: alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
   - name: MAV_CMD_NAV_GUIDED_ENABLE
@@ -174,7 +174,7 @@ commands:
     p2:
         name: speed
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 3.0
   - name: MAV_CMD_DO_SET_HOME
@@ -189,19 +189,19 @@ commands:
     p5:
         name: lat
         value:
-            type: continous
+            type: continuous
             min: -90.0
             max: 90.0
     p6:
         name: lon
         value:
-            type: continous
+            type: continuous
             min: -180.0
             max: 180.0
     p7:
         name: alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
   - name: MAV_CMD_DO_PARACHUTE
@@ -219,24 +219,24 @@ commands:
     p1:
         name: timeout
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 1000.0
     p2:
         name: min_alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
     p3:
         name: max_alt
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 15.0
     p4:
         name: max_dist
         value:
-            type: continous
+            type: continuous
             min: 0.0
             max: 30.0

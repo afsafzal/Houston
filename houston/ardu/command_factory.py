@@ -1,7 +1,8 @@
 import os
 import logging
-import yaml
 from typing import Dict, Any, Type, List
+
+import yaml
 
 from .connection import CommandLong
 from ..valueRange import ContinuousValueRange, DiscreteValueRange
@@ -26,8 +27,7 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
     except KeyError:
         msg = "missing 'id' field of Command"
         raise TypeError(msg)
-    parameters = []
-    params_name = {}
+    parameters = {}  # type: Dict[str, Union[int, Tuple[str, Parameter]]]
     for i in range(1, 8):
         p = 'p{}'.format(i)
         if p in command:
@@ -46,7 +46,7 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
             if typ == 'discrete':
                 vals = command[p]['value']['vals']
                 param = Parameter(p_name, DiscreteValueRange(vals))
-            elif typ == 'continous':
+            elif typ == 'continuous':
                 min_value = command[p]['value']['min']
                 max_value = command[p]['value']['max']
                 param = Parameter(p_name, ContinuousValueRange(min_value,
@@ -55,23 +55,22 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
             else:
                 msg = "The type of value {} is not supported".format(typ)
                 raise Exception(msg)
-            parameters.append(param)
-            params_name['param_{}'.format(i)] = p_name
+            parameters['param_{}'.format(i)] = param
         else:
-            params_name['param_{}'.format(i)] = 0
+            parameters['param_{}'.format(i)] = 0
 
     def to_message(self):
         params = {}
-        for p, n in params_name.items():
-            if not n:
-                params[p] = n
+        for name, p in parameters.items():
+            if not p:
+                params[name] = p
             else:
-                params[p] = self[n]
+                params[name] = self[p.name]
         return CommandLong(0, 0, id, **params)
 
     ns = {'name': name,
           'to_message': to_message,
-          'parameters': parameters,
+          'parameters': [p for p in parameters.values() if p],
           'specifications': [Idle]}
 
     C = CommandMeta(name, (Command,), ns)
@@ -88,8 +87,5 @@ def read_commands_yml(filename: str) -> List[Type[Command]]:
     all_commands = []
     with open(filename, 'r') as f:
         all_commands = yaml.load(f)['commands']
-    classes = []
-    for command in all_commands:
-        command_class = create_command(command)
-        classes.append(command_class)
+    classes = [create_command(c) for c in all_commands]
     return classes
