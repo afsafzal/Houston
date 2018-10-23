@@ -13,22 +13,6 @@ from ..specification import Idle
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
-def circle_based_generator(cls, rng: random.Random) -> Command:
-    (lat, lon) = (-35.3632607, 149.1652351)  # FIXME
-    heading = rng.uniform(0.0, 360.0)
-    dist = rng.uniform(0.0, 2.0)  # FIXME
-    params = {}
-    for p in cls.parameters:
-        params[p.name] = p.generate(rng)
-
-    origin = geopy.Point(latitude=lat, longitude=lon)
-    dist = geopy.distance.VincentyDistance(meters=dist)
-    destination =  dist.destination(origin, heading)
-    params['lat'] = destination.latitude
-    params['lon'] = destination.longitude
-
-    command = cls(**params)
-    return command
 
 def circle_based_generator(cls, rng: random.Random) -> Command:
     (lat, lon) = (-35.3632607, 149.1652351)  # FIXME
