@@ -9,6 +9,7 @@ from typing import Dict, Callable, List, Type
 from ..runner import MissionRunnerPool
 from ..system import System
 from ..mission import Mission, MissionSuite, MissionOutcome
+from ..command import Command
 from .resources import ResourceUsage, ResourceLimits
 from .report import MissionGeneratorReport
 
@@ -34,42 +35,41 @@ class MissionGeneratorStream(object):
         """
         g = self.__generator
         with self.__lock:
-            try:
-                g.tick()
-                if g.exhausted():
-                    raise StopIteration
-                mission = self.__generator.generate_mission()
-                g.tick()
-                g.resource_usage.num_missions += 1
-                mission_num = g.resource_usage.num_missions
-                logger.debug('Generated mission: {}'.format(mission_num))
-                return mission
+            g.tick()
+            if g.exhausted():
+                raise StopIteration
+            mission = self.__generator.generate_mission()
+            g.tick()
+            g.resource_usage.num_missions += 1
+            mission_num = g.resource_usage.num_missions
+            logger.debug('Generated mission: {}'.format(mission_num))
+            return mission
 
 
 class MissionGenerator(object):
     def __init__(self,
-                 system: System,
+                 system: Type[System],
                  threads: int = 1,
                  command_generators: Dict[str, Callable] = None,
-                 max_num_actions: int = 10
+                 max_num_commands: int = 10
                  ) -> None:
-        assert isinstance(system, System)
+        assert issubclass(system, System)
         assert isinstance(threads, int)
-        assert isinstance(max_num_actions, int)
+        assert isinstance(max_num_commands, int)
         assert threads > 0
-        assert max_num_actions > 0
+        assert max_num_commands > 0
 
         if not command_generators:
             command_generators = {}
 
         self.__system = system
         self.__threads = threads
-        self.__max_num_actions = max_num_actions
+        self.__max_num_commands = max_num_commands
 
         # transform the list of generators into a dictionary, indexed by the
         # name of the associated action schema
         self.__threads = threads
-        self.__command_generators = command_generator
+        self.__command_generators = command_generators
 
     @property
     def resource_limits(self):
@@ -87,12 +87,12 @@ class MissionGenerator(object):
         return self.__system
 
     @property
-    def max_num_actions(self):
+    def max_num_commands(self):
         """
         The maximum number of actions that may be present in a mission
         produced by this generator.
         """
-        return self.__max_num_actions
+        return self.__max_num_commands
 
     @property
     def history(self):
