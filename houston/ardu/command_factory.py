@@ -23,7 +23,7 @@ def circle_based_generator(cls, rng: random.Random) -> Command:
         params[p.name] = p.generate(rng)
 
     origin = geopy.Point(latitude=lat, longitude=lon)
-    dist = geopy.distance.VincentyDistance(meters=dist)
+    dist = geopy.distance.distance(meters=dist)
     destination = dist.destination(origin, heading)
     params['lat'] = destination.latitude
     params['lon'] = destination.longitude

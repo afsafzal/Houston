@@ -70,7 +70,7 @@ class GoTo(Command):
         params = {}
 
         origin = geopy.Point(latitude=lat, longitude=lon)
-        dist = geopy.distance.VincentyDistance(meters=dist)
+        dist = geopy.distance.distance(meters=dist)
         destination = dist.destination(origin, heading)
         params['latitude'] = destination.latitude
         params['longitude'] = destination.longitude
