@@ -78,7 +78,8 @@ class MissionRunnerPool(object):
 
         # provision desired number of runners
         self.__runners = \
-            [MissionRunner(self, bz, snapshot, with_coverage) for _ in range(size)]
+            [MissionRunner(self, bz, snapshot, with_coverage)
+                for _ in range(size)]
 
     def run(self) -> None:
         """

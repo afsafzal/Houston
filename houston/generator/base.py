@@ -203,7 +203,10 @@ class MissionGenerator(object):
         if outcome.failed:
             self.__failures.add(mission)
 
-    def generate(self, seed: int, resource_limits: ResourceLimits) -> List[Mission]:
+    def generate(self,
+                 seed: int,
+                 resource_limits: ResourceLimits
+                 ) -> List[Mission]:
         """
         Generate missions and return them
         """

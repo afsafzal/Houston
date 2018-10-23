@@ -71,7 +71,7 @@ class GoTo(Command):
 
         origin = geopy.Point(latitude=lat, longitude=lon)
         dist = geopy.distance.VincentyDistance(meters=dist)
-        destination =  dist.destination(origin, heading)
+        destination = dist.destination(origin, heading)
         params['latitude'] = destination.latitude
         params['longitude'] = destination.longitude
         params['altitude'] = 5.0  # FIXME
