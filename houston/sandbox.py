@@ -18,6 +18,7 @@ from .environment import Environment
 from .configuration import Configuration
 from .state import State
 from .command import Command, CommandOutcome
+from .recorder import Recorder
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -87,7 +88,7 @@ class Sandbox(object):
                  container: Container,
                  state_initial: State,
                  environment: Environment,
-                 configuration: Configuration
+                 configuration: Configuration,
                  ) -> None:
         self.__lock = threading.Lock()
         self.__state_lock = threading.Lock()
@@ -98,6 +99,7 @@ class Sandbox(object):
         self.__environment = environment
         self.__configuration = configuration
         self.__time_start = timer()
+        self.__recorder = None
 
     @property
     def running_time(self) -> float:
@@ -141,6 +143,26 @@ class Sandbox(object):
         The BugZoo container underlying this sandbox.
         """
         return self.__container
+
+    @property
+    def recorder(self) -> Recorder:
+        """
+        The recorder object to record states during execution.
+        """
+        return self.__recorder
+
+    def set_recorder(self, filename: str = '') -> Recorder:
+        """
+        Set the recorder.
+        """
+        self.__recorder = Recorder(filename=filename)
+        return self.__recorder
+
+    def unset_recorde(self) -> None:
+        """
+        Unset the recorder.
+        """
+        self.__recorder = None
 
     def start(self) -> None:
         """
@@ -251,3 +273,5 @@ class Sandbox(object):
     def update(self, message: Message) -> None:
         with self.__state_lock:
             self.__state = self.__state.evolve(message, self.running_time)
+            if self.recorder:
+                self.recorder.add(self.__state)
