@@ -17,7 +17,7 @@ class MissionRunner(threading.Thread):
     def __init__(self,
                  pool,
                  bz: BugZooClient,
-                 snapshot: str,
+                 snapshot_name: str,
                  with_coverage: bool = False
                  ) -> None:
         super().__init__()
@@ -25,7 +25,7 @@ class MissionRunner(threading.Thread):
         self.__pool = pool
         self.__with_coverage = with_coverage
         self.__bz = bz
-        self.__snapshot = snapshot
+        self.__snapshot_name = snapshot_name
 
     def run(self) -> None:
         """
@@ -40,7 +40,7 @@ class MissionRunner(threading.Thread):
                 # FIXME
                 raise NotImplementedError
             else:
-                outcome = m.run(self.__bz, self.__snapshot)
+                outcome = m.run(self.__bz, self.__snapshot_name)
                 coverage = None
             self.__pool.report(m, outcome, coverage)
 
@@ -58,7 +58,7 @@ class MissionRunnerPool(object):
     """
     def __init__(self,
                  bz: BugZooClient,
-                 snapshot: str,
+                 snapshot_name: str,
                  system: 'System',
                  size: int,
                  source,  # FIXME
@@ -78,7 +78,7 @@ class MissionRunnerPool(object):
 
         # provision desired number of runners
         self.__runners = \
-            [MissionRunner(self, bz, snapshot, with_coverage)
+            [MissionRunner(self, bz, snapshot_name, with_coverage)
                 for _ in range(size)]
 
     def run(self) -> None:

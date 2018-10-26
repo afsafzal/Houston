@@ -1,4 +1,4 @@
-from typing import Type, Dict, Callable
+from typing import Type, Dict, Callable, Optional
 
 from .base import MissionGenerator
 from ..mission import Mission
@@ -16,7 +16,7 @@ class RandomMissionGenerator(MissionGenerator):
                  env: Environment,
                  config: Configuration,
                  threads: int = 1,
-                 command_generators: Dict[str, Callable] = None,
+                 command_generators: Optional[Dict[str, Callable]] = None,
                  max_num_commands: int = 10
                  ) -> None:
         super().__init__(system, threads, command_generators, max_num_commands)

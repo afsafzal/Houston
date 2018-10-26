@@ -238,10 +238,7 @@ class Command(object, metaclass=CommandMeta):
         """
         The UID of the type of this command.
         """
-#        return self.__class__.uid
-        s = '{}.{}'.format(self.__class__.__module__,
-                           self.__class__.__qualname__)
-        return s
+        return self.__class__.uid
 
     @property
     def name(self) -> str:
@@ -351,9 +348,7 @@ class Command(object, metaclass=CommandMeta):
 
     @classmethod
     def generate(cls, rng: random.Random) -> 'Command':
-        params = {}
-        for p in cls.parameters:
-            params[p.name] = p.generate(rng)
+        params = {p.name: p.generate(rng) for p in cls.parameters}
         command = cls(**params)
         return command
 

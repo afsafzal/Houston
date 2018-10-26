@@ -4,7 +4,7 @@ import timeit
 from bugzoo.client import Client as BugZooClient
 
 import logging
-from typing import Dict, Callable, List, Type
+from typing import Dict, Callable, List, Type, Optional
 
 from ..runner import MissionRunnerPool
 from ..system import System
@@ -42,7 +42,7 @@ class MissionGeneratorStream(object):
             g.tick()
             g.resource_usage.num_missions += 1
             mission_num = g.resource_usage.num_missions
-            logger.debug('Generated mission: {}'.format(mission_num))
+            logger.debug('Generated mission: %d', mission_num)
             return mission
 
 
@@ -50,7 +50,7 @@ class MissionGenerator(object):
     def __init__(self,
                  system: Type[System],
                  threads: int = 1,
-                 command_generators: Dict[str, Callable] = None,
+                 command_generators: Optional[Dict[str, Callable]] = None,
                  max_num_commands: int = 10
                  ) -> None:
         assert issubclass(system, System)
@@ -89,7 +89,7 @@ class MissionGenerator(object):
     @property
     def max_num_commands(self):
         """
-        The maximum number of actions that may be present in a mission
+        The maximum number of commands that may be present in a mission
         produced by this generator.
         """
         return self.__max_num_commands
@@ -126,7 +126,7 @@ class MissionGenerator(object):
 
     def command_generator(self, command: Type[Command]):
         """
-        Retrieves any action generator that has been associated with a given
+        Retrieves any command generator that has been associated with a given
         schema, or None if no action generator has been provided for the
         given schema.
         """
@@ -176,16 +176,16 @@ class MissionGenerator(object):
 
     def execute_mission(self,
                         bz: BugZooClient,
-                        snapshot: str,
+                        snapshot_name: str,
                         mission: Mission
                         ) -> MissionOutcome:
         """
         Executes a given mission using a provided container.
         """
-        print("executing mission..."),
-        outcome = mission.run(bz, snapshot)
+        logger.info("executing mission..."),
+        outcome = mission.run(self.bz, snapshot_name)
         self.record_outcome(mission, outcome)
-        print("\t[DONE]")
+        logger.ingo("\t[DONE]")
         return outcome
 
     def record_outcome(self, mission, outcome, coverage=None):
