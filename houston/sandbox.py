@@ -88,7 +88,7 @@ class Sandbox(object):
                  container: Container,
                  state_initial: State,
                  environment: Environment,
-                 configuration: Configuration,
+                 configuration: Configuration
                  ) -> None:
         self.__lock = threading.Lock()
         self.__state_lock = threading.Lock()
