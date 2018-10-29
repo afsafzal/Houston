@@ -2,7 +2,7 @@ __all__ = ['Mission', 'MissionOutcome', 'CrashedMissionOutcome',
            'MissionSuite']
 
 from typing import Dict, Any, List, Iterator, Tuple,\
-    Type, Union
+    Type, Union, Optional
 
 import attr
 
@@ -74,7 +74,8 @@ class Mission(object):
 
     def run(self,
             bz: BugZooClient,
-            snapshot_or_name: Union[str, Snapshot]
+            snapshot_or_name: Union[str, Snapshot],
+            recorder_filename: Optional[str] = None
             ) -> 'MissionOutcome':
         """
         Creates a sandbox and runs the commands and returns the outcome.
@@ -84,7 +85,7 @@ class Mission(object):
                                               self.initial_state,
                                               self.environment,
                                               self.configuration) as sandbox:
-            outcome = sandbox.run(self.commands)
+            outcome = sandbox.run(self.commands, recorder_filename)
             return outcome
 
 

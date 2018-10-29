@@ -158,7 +158,7 @@ class Sandbox(object):
         self.__recorder = Recorder(filename=filename)
         return self.__recorder
 
-    def unset_recorde(self) -> None:
+    def unset_recorder(self) -> None:
         """
         Unset the recorder.
         """
@@ -236,7 +236,10 @@ class Sandbox(object):
                                  time_elapsed)
         return outcome
 
-    def run(self, commands: Sequence[Command]) -> 'MissionOutcome':
+    def run(self,
+            commands: Sequence[Command],
+            recorder_filename: Optional[str] = None
+            ) -> 'MissionOutcome':
         """
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
@@ -246,16 +249,23 @@ class Sandbox(object):
         env = self.environment
         time_start = timer()
         time_elapsed = 0.0
+        if recorder_filename:
+            self.set_recorder(recorder_filename)
         with self.__lock:
             outcomes = []  # type: List[CommandOutcome]
             passed = True
             for cmd in commands:
+                if recorder_filename:
+                    self.recorder.write("C: {}".format(cmd.to_dict()))
                 outcome = self.run_command(cmd)
+                if recorder_filename:
+                    self.recorder.write_and_flush()
                 outcomes.append(outcome)
                 if not outcome.successful:
                     passed = False
                     break
             time_elapsed = timer() - time_start
+            self.unset_recorder()
             return MissionOutcome(passed, outcomes, time_elapsed)
 
     def observe(self) -> None:

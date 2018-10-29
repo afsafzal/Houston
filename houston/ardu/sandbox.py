@@ -179,7 +179,10 @@ class Sandbox(BaseSandbox):
         """
         return True
 
-    def run(self, commands: Sequence[Command]) -> 'MissionOutcome':
+    def run(self,
+            commands: Sequence[Command],
+            recorder_filename: Optional[str] = None
+            ) -> 'MissionOutcome':
         """
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
@@ -239,7 +242,8 @@ class Sandbox(BaseSandbox):
                 time.sleep(0.1)
                 self.vehicle.armed = True
 
-            self.set_recorder('tempfile.json') # FIXME
+            if recorder_filename:
+                self.set_recorder(recorder_filename)
 
             self.vehicle.mode = dronekit.VehicleMode("AUTO")
             initial_state = self.state
@@ -258,9 +262,10 @@ class Sandbox(BaseSandbox):
                     time_passed = current_time - time_start
                     wp_state[last_wp[0]] = (self.state, time_passed)
                     time_start = current_time
-                    self.recorder.write("C: {}".format(last_wp[0])) # FIXME
-                    t = threading.Thread(target=self.recorder.write_and_flush)
-                    t.start()
+                    if recorder_filename:
+                        self.recorder.write("C: {}".format(last_wp[0])) # FIXME
+                        t = threading.Thread(target=self.recorder.write_and_flush)
+                        t.start()
                     event.clear()
 
             self.connection.remove_hook('reached')
