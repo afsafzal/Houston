@@ -263,7 +263,7 @@ class Sandbox(BaseSandbox):
                     wp_state[last_wp[0]] = (self.state, time_passed)
                     time_start = current_time
                     if recorder_filename:
-                        self.recorder.write("C: {}".format(last_wp[0])) # FIXME
+                        self.recorder.write("C: {}\n".format(last_wp[0])) # FIXME
                         t = threading.Thread(target=self.recorder.write_and_flush)
                         t.start()
                     event.clear()

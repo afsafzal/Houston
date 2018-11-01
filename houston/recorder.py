@@ -4,6 +4,7 @@ from typing import Type, FrozenSet, Dict, Any, List
 import attr
 import logging
 
+import json
 import threading
 
 from .state import State
@@ -28,7 +29,8 @@ class Recorder(object):
     """
     def __init__(self,
                  states: List[State] = None,
-                 filename: str = '') -> None
+                 filename: str = ''
+                 ) -> None:
         self.__states = states if states else []
         self.__filename = filename
         self.__lock = threading.Lock()
@@ -53,9 +55,10 @@ class Recorder(object):
             states = list(map(State.to_dict, self.__states))
             self.__states = []
         with self.__file_lock:
-            with open(fn, 'w') as f:
+            with open(self.filename, 'a') as f:
                 for s in states:
                     json.dump(s, f)
+                    f.write('\n')
         return states
 
     def flush(self) -> List[State]:
@@ -68,5 +71,5 @@ class Recorder(object):
         if not self.filename:
             raise NoFileSetError()
         with self.__file_lock:
-            with open(self.filename, 'w') as f:
+            with open(self.filename, 'a') as f:
                 f.write(string)
