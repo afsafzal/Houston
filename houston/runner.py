@@ -42,8 +42,8 @@ class MissionRunner(threading.Thread):
                 # FIXME
                 raise NotImplementedError
             else:
-                recorder_filename = "record/mission#{}.jsn".format(i) # FIXME
-                    if self.__record else None
+                recorder_filename = "record/mission#{}.jsn".format(i)\
+                    if self.__record else None  # FIXME
                 outcome = m.run(self.__bz, self.__snapshot_name, recorder_filename)
                 coverage = None
             self.__pool.report(m, outcome, coverage)

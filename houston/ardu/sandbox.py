@@ -105,6 +105,8 @@ class Sandbox(BaseSandbox):
         the vehicle running inside the simulation. Blocks until SITL is
         launched and a connection is established.
         """
+        self._bugzoo.coverage.instrument(self.container)
+
         bzc = self._bugzoo.containers
         args = (binary_name, model_name, param_file, verbose)
         self.__sitl_thread = threading.Thread(target=self._launch_sitl,
@@ -119,6 +121,7 @@ class Sandbox(BaseSandbox):
         ip = str(bzc.ip_address(self.container))
         url = "{}:{}:{}".format(protocol, ip, port)
 
+        logger.debug("Not waiting")
         dummy_connection = mavutil.mavlink_connection(url)
         time.sleep(10)
         dummy_connection.close()
@@ -257,13 +260,14 @@ class Sandbox(BaseSandbox):
                 event.wait()
                 with mylock:
                     # self.observe()
+                    coverage = self.__get_coverage()
                     logger.debug("STATE: {}".format(self.state))
                     current_time = timer()
                     time_passed = current_time - time_start
-                    wp_state[last_wp[0]] = (self.state, time_passed)
+                    wp_state[last_wp[0]] = (self.state, time_passed, coverage)
                     time_start = current_time
                     if recorder_filename:
-                        self.recorder.write("C: {}\n".format(last_wp[0])) # FIXME
+                        self.recorder.write("C: {}\n".format(last_wp[0]))  # FIXME
                         t = threading.Thread(target=self.recorder.write_and_flush)
                         t.start()
                     event.clear()
@@ -309,3 +313,19 @@ class Sandbox(BaseSandbox):
             logger.debug("S: %s", self.state)
             if self.recorder:
                 self.recorder.add(self.__state)
+
+    def __get_coverage(self):
+        bzc = self._bugzoo.containers
+        ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
+        rm_cmd = 'find . -name *.gcda | xargs rm'
+
+        out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
+        all_processes = out.output.splitlines()
+        for p in all_processes:
+            n, c = p.split(' ')
+            if c.startswith('/opt/ardupilot'):
+                bzc.command(self.container, "kill -10 {}".format(n), block=True)
+                break
+        coverage = self._bugzoo.coverage.extract(self.container)
+        bzc.command(self.container, rm_cmd, block=True)
+        return coverage
