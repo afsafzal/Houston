@@ -30,9 +30,9 @@ class Mission(object):
 
     @staticmethod
     def from_dict(jsn: Dict[str, Any]) -> 'Mission':
-        system = System.get_by_name(jsn['system'])()
+        system = System.get_by_name(jsn['system'])
         env = Environment.from_json(jsn['environment'])
-        config = system.configuration.from_json(jsn['configuration'])
+        config = system.configuration.from_dict(jsn['configuration'])
         initial_state = system.state.from_dict(jsn['initial_state'])
         cmds = tuple(Command.from_dict(c) for c in jsn['commands'])
         return Mission(config, env, initial_state, cmds, system)

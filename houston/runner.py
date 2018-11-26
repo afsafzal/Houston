@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import threading
 import time
@@ -44,6 +44,7 @@ class MissionRunner(threading.Thread):
             else:
                 recorder_filename = "record/mission#{}.jsn".format(i)\
                     if self.__record else None  # FIXME
+                print("Running mission #{}".format(i))
                 outcome = m.run(self.__bz, self.__snapshot_name, recorder_filename)
                 coverage = None
             self.__pool.report(m, outcome, coverage)
