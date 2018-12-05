@@ -50,10 +50,7 @@ class MissionRunner(threading.Thread):
             self.__pool.report(m, outcome, coverage)
 
     def shutdown(self):
-        if self.__sandbox is not None:
-            self.__sandbox.destroy()
-            self.__sandbox = None
-
+        return
 
 class MissionRunnerPool(object):
     """

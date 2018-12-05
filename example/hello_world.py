@@ -55,7 +55,7 @@ def run_all_missions(bz, snapshot_name, sut, mission_file, coverage=False, recor
         outcomes[mission] = outcome
         coverages[mission] = coverage
 
-    runner_pool = MissionRunnerPool(bz, snapshot_name, sut, 2, missions, record_outcome, coverage, record)
+    runner_pool = MissionRunnerPool(bz, snapshot_name, sut, 4, missions, record_outcome, coverage, record)
     print("Started running")
     runner_pool.run()
     print("Done running")
@@ -64,7 +64,7 @@ def run_all_missions(bz, snapshot_name, sut, mission_file, coverage=False, recor
     with open("example/failed.json", "w") as f:
         for m in outcomes:
             if not outcomes[m].passed:
-                f.write(str(m.to_json()))
+                f.write(str(m.to_dict()))
                 f.write("\n")
 
     if coverage:

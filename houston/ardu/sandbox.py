@@ -190,7 +190,7 @@ class Sandbox(BaseSandbox):
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
         """
-        logger.debug("Recorder filename: %s", recorder_filename)
+        logger.debug("Recorder filename: %s, Mission: %s", recorder_filename, str(commands))
         config = self.configuration
         env = self.environment
         with self.__lock:
@@ -295,14 +295,25 @@ class Sandbox(BaseSandbox):
             self.connection.remove_hook('reached')
             self.unset_recorder()
             outcomes = []
-            state_before = initial_state
+            wp_state[0] = initial_state
+#            state_before = initial_state
             mission_passed = timeout # consider mission passed if it doesn't hit timeout
             mission_time = 0.0
             for i in range(len(commands)):
                 cmd_index = 1 + i * 2
-                time_elapsed = wp_state[cmd_index][1]
+#                time_elapsed = wp_state[cmd_index][1]
                 # FIXME this whole time elapsed thing is wrong
-                state_after = wp_state[cmd_index + 1][0]
+                state_before = None
+                for j in range(cmd_index, -1, -1):
+                    if j in wp_state:
+                        state_before = wp_state[j][0]
+                        break
+                state_after = None
+                for j in range(cmd_index + 1, len(cmds)):
+                    if j in wp_state:
+                        state_after = wp_state[j][0]
+                        time_elapsed = wp_state[j][1] # This is wrong!
+                        break
                 command = commands[i]
                 coverage = self.__get_coverage(directory='command{}'.format(cmd_index))
                 m = recorder_filename+'.cov'
@@ -325,7 +336,7 @@ class Sandbox(BaseSandbox):
                                          state_after,
                                          time_elapsed)
                 outcomes.append(outcome)
-                state_before = state_after
+#                state_before = state_after
                 mission_time += time_elapsed
 
             return MissionOutcome(mission_passed, outcomes, mission_time)
@@ -359,7 +370,10 @@ class Sandbox(BaseSandbox):
 
         out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
         all_processes = out.output.splitlines()
+        logger.debug("checking list of processes: %s", str(all_processes))
         for p in all_processes:
+            if not p:
+                continue
             n, c = p.split(' ')
             if c.startswith('/opt/ardupilot'):
                 bzc.command(self.container, "kill -10 {}".format(n), block=True)
