@@ -225,19 +225,25 @@ class Sandbox(BaseSandbox):
             wp_event = threading.Event()
 
             wp_state = {}  # Dict[int, Tuple[State, float]]
-            last_wp = [-1]
+            last_wp = [0, 0]
 
             def reached(m):
                 name = m.name
                 message = m.message
                 if name == 'MISSION_ITEM_REACHED':
                     logger.debug("**MISSION_ITEM_REACHED: %d", message.seq)
-                    with wp_lock:
-                        last_wp[0] = int(message.seq)
-                        wp_event.set()
+#                    with wp_lock:
+#                        last_wp[0] = int(message.seq)
+#                        wp_event.set()
                 elif name == 'MISSION_CURRENT':
                     logger.debug("**MISSION_CURRENT: {}".format(message.seq))
                     logger.debug("STATE: {}".format(self.state))
+                    if message.seq != last_wp[0]:
+                        with wp_lock:
+                            if message.seq == last_wp[0]:
+                                return
+                            last_wp[1] = message.seq
+                            wp_event.set()
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
 
@@ -284,6 +290,7 @@ class Sandbox(BaseSandbox):
                         t = threading.Thread(
                             target=self.recorder.write_and_flush)
                         t.start()
+                    last_wp[0] = last_wp[1]
                     wp_event.clear()
 
             self.connection.remove_hook('reached')
@@ -301,19 +308,20 @@ class Sandbox(BaseSandbox):
                     if j in wp_state:
                         state_before = wp_state[j][0]
                         break
-                state_after = None
-                for k in range(cmd_index, len(cmds)):
-                    if k in wp_state:
-                        state_after = wp_state[k][0]
-                        time_elapsed = wp_state[k][1] - wp_state[j][1]
-                        break
-                command = commands[i]
-                directory = 'command{}'.format(cmd_index)
-                coverage = self.__get_coverage(directory=directory)
-                m = recorder_filename + '.cov'
-                with open(m, 'a') as f:
-                    f.write('Command #{}: {}\n'.format(cmd_index, command))
-                    f.write('{}\n'.format(str(coverage)))
+                if cmd_index in wp_state:
+                    state_after = wp_state[cmd_index][0]
+                    time_elapsed = wp_state[cmd_index][1] - wp_state[j][1]
+                    command = commands[i]
+                    directory = 'command{}'.format(cmd_index)
+                    coverage = self.__get_coverage(directory=directory)
+                    m = recorder_filename + '.cov'
+                    with open(m, 'a') as f:
+                        f.write('Command #{}: {}\n'.format(cmd_index, command))
+                        f.write('{}\n'.format(str(coverage)))
+                else:
+                    state_after = state_before
+                    time_elapsed = 0.0
+
 #                determine which spec the system should observe
 #                spec = command.resolve(state_before, env, config)
 #                postcondition = spec.postcondition
