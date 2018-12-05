@@ -202,16 +202,16 @@ class Sandbox(BaseSandbox):
                                        0.0, 0.0, 0.0, 0.0,
                                        -35.3632607, 149.1652351, 584)
             # 10 seconds delay to allow the robot to reach its stable state
-            delay = dronekit.Command(0, 0, 0,
-                                     3, 93, 0, 0,
-                                     10, -1, -1, -1,
-                                     0, 0, 0)
+            # delay = dronekit.Command(0, 0, 0,
+            #                         3, 93, 0, 0,
+            #                         10, -1, -1, -1,
+            #                         0, 0, 0)
 
-            cmds = [initial]
-            for cmd in commands:
-                cmds.append(cmd.to_message().to_dronekit_command())
-                cmds.append(delay)
+            cmds = [cmd.to_message().to_dronekit_command()
+                        for cmd in commands]
+            cmds.insert(0, initial)
 
+            # uploading the mission to the vehicle
             vcmds = self.vehicle.commands
             vcmds.clear()
             for cmd in cmds:
@@ -220,10 +220,10 @@ class Sandbox(BaseSandbox):
             logger.debug("Mission uploaded")
             vcmds.wait_ready()
 
-            mylock = threading.Lock()
-            event = threading.Event()
+            wp_lock = threading.Lock()
+            wp_event = threading.Event()
 
-            wp_state = {}
+            wp_state = {} # Dict[int, Tuple[State, float]]
             last_wp = [-1]
 
             def reached(m):
@@ -231,15 +231,17 @@ class Sandbox(BaseSandbox):
                 message = m.message
                 if name == 'MISSION_ITEM_REACHED':
                     logger.debug("**MISSION_ITEM_REACHED: %d", message.seq)
-                    with mylock:
+                    with wp_lock:
                         last_wp[0] = int(message.seq)
-                        event.set()
+                        wp_event.set()
                 elif name == 'MISSION_CURRENT':
                     logger.debug("**MISSION_CURRENT: {}".format(message.seq))
                     logger.debug("STATE: {}".format(self.state))
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
+
             self.connection.add_hooks({'reached': reached})
+
             self.vehicle.armed = True
             while not self.vehicle.armed:
                 logger.info("waiting for the rover to be armed...")
@@ -249,37 +251,23 @@ class Sandbox(BaseSandbox):
             if recorder_filename:
                 self.set_recorder(recorder_filename)
 
+            # starting the mission
             self.vehicle.mode = dronekit.VehicleMode("AUTO")
             initial_state = self.state
-            message = CommandLong(
+            start_message = CommandLong(
                 0, 0, 300, 0, 1, len(cmds) + 1, 0, 0, 0, 0, 4)
-            self.connection.send(message)
+            self.connection.send(start_message)
             logger.debug("sent mission start message to vehicle")
             time_start = timer()
 
-            ll = threading.Lock()
-            def temp(self, i):
-                with ll:
-                    coverage = self.__get_coverage()
-                    if recorder_filename:
-                        m = recorder_filename+'.cov'
-                        with open(m, 'a') as f:
-                            f.write('C: {}\n'.format(i))
-                            f.write(str(covergae))
-                    return coverage
-
-
+            timeout = True
             while last_wp[0] < len(cmds) - 1:
-                timeout = event.wait(600)
+                timeout = wp_event.wait(600) # 10 minutes to run a single command
                 if not timeout:
                     logger.error("Timeout occured %d", last_wp[0])
                     break
-                with mylock:
+                with wp_lock:
                     # self.observe()
-                    #coverage = self.__get_coverage()
-                    #t1 = threading.Thread(target=temp,
-                    #                      args=(self, last_wp[0]))
-                    #t1.start()
                     self.__copy_coverage_files("command{}".format(last_wp[0]))
                     logger.debug("STATE: {}".format(self.state))
                     current_time = timer()
@@ -287,38 +275,37 @@ class Sandbox(BaseSandbox):
                     wp_state[last_wp[0]] = (self.state, time_passed)
                     time_start = current_time
                     if recorder_filename:
-                        self.recorder.write("C: {}\n".format(last_wp[0]))  # FIXME
+                        self.recorder.write("Command #{}: {}\n".format(last_wp[0],
+                                                                       commands[last_wp[0]-1]))
                         t = threading.Thread(target=self.recorder.write_and_flush)
                         t.start()
-                    event.clear()
+                    wp_event.clear()
 
             self.connection.remove_hook('reached')
             self.unset_recorder()
+
             outcomes = []
-            wp_state[0] = initial_state
-#            state_before = initial_state
+            wp_state[0] = (initial_state, 0.0)
             mission_passed = timeout # consider mission passed if it doesn't hit timeout
             mission_time = 0.0
             for i in range(len(commands)):
-                cmd_index = 1 + i * 2
-#                time_elapsed = wp_state[cmd_index][1]
-                # FIXME this whole time elapsed thing is wrong
+                cmd_index = 1 + i
                 state_before = None
-                for j in range(cmd_index, -1, -1):
+                for j in range(cmd_index - 1, -1, -1):
                     if j in wp_state:
                         state_before = wp_state[j][0]
                         break
                 state_after = None
-                for j in range(cmd_index + 1, len(cmds)):
-                    if j in wp_state:
-                        state_after = wp_state[j][0]
-                        time_elapsed = wp_state[j][1] # This is wrong!
+                for k in range(cmd_index, len(cmds)):
+                    if k in wp_state:
+                        state_after = wp_state[k][0]
+                        time_elapsed = wp_state[k][1] - wp_state[j][1]
                         break
                 command = commands[i]
                 coverage = self.__get_coverage(directory='command{}'.format(cmd_index))
                 m = recorder_filename+'.cov'
                 with open(m, 'a') as f:
-                    f.write('C: {}\n'.format(command))
+                    f.write('Command #{}: {}\n'.format(cmd_index, command))
                     f.write('{}\n'.format(str(coverage)))
                 # determine which spec the system should observe
 #                spec = command.resolve(state_before, env, config)
@@ -351,7 +338,12 @@ class Sandbox(BaseSandbox):
             if self.recorder:
                 self.recorder.add(self.__state)
 
-    def __get_coverage(self, directory):
+    def __get_coverage(self, directory: str) -> "FileLineSet":
+        """
+        Copies gcda files from /tmp/<directory> to /opt/ardupilot
+        (where the source code is) and collects coverage results.
+        """
+
         bzc = self._bugzoo.containers
         rm_cmd = 'cd /opt/ardupilot/ && find . -name *.gcda | xargs rm'
         cp_cmd = 'cd /tmp/{}/ardupilot && find . -name *.gcda -exec cp --parents \\{{\\}} /opt/ardupilot \\;'.format(directory)
@@ -362,7 +354,13 @@ class Sandbox(BaseSandbox):
         bzc.command(self.container, rm_cmd, block=True)
         return coverage
 
-    def __copy_coverage_files(self, directory):
+    def __copy_coverage_files(self, directory: str) -> None:
+        """
+        Sends a SIGUSR1 signal to ardupilot processes running in the
+        container. They will flush gcov data into gcda files that
+        will be copied to /tmp/<directory> for later use.
+        """
+
         bzc = self._bugzoo.containers
         ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
         mv_cmd = 'find . -name *.gcda -exec cp --parents \\{{\\}} /tmp/{}/ \\;'.format(directory)
