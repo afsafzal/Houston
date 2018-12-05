@@ -190,7 +190,8 @@ class Sandbox(BaseSandbox):
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
         """
-        logger.debug("Recorder filename: %s, Mission: %s", recorder_filename, str(commands))
+        logger.debug("Recorder filename: %s, Mission: %s",
+                     recorder_filename, str(commands))
         config = self.configuration
         env = self.environment
         with self.__lock:
@@ -208,7 +209,7 @@ class Sandbox(BaseSandbox):
             #                         0, 0, 0)
 
             cmds = [cmd.to_message().to_dronekit_command()
-                        for cmd in commands]
+                    for cmd in commands]
             cmds.insert(0, initial)
 
             # uploading the mission to the vehicle
@@ -223,7 +224,7 @@ class Sandbox(BaseSandbox):
             wp_lock = threading.Lock()
             wp_event = threading.Event()
 
-            wp_state = {} # Dict[int, Tuple[State, float]]
+            wp_state = {}  # Dict[int, Tuple[State, float]]
             last_wp = [-1]
 
             def reached(m):
@@ -262,7 +263,8 @@ class Sandbox(BaseSandbox):
 
             timeout = True
             while last_wp[0] < len(cmds) - 1:
-                timeout = wp_event.wait(600) # 10 minutes to run a single command
+                # allow a single command to run for 10 minutes
+                timeout = wp_event.wait(600)
                 if not timeout:
                     logger.error("Timeout occured %d", last_wp[0])
                     break
@@ -275,9 +277,12 @@ class Sandbox(BaseSandbox):
                     wp_state[last_wp[0]] = (self.state, time_passed)
                     time_start = current_time
                     if recorder_filename:
-                        self.recorder.write("Command #{}: {}\n".format(last_wp[0],
-                                                                       commands[last_wp[0]-1]))
-                        t = threading.Thread(target=self.recorder.write_and_flush)
+                        c_str = "Command #{}: {}\n"
+                        c_str = c_str.format(last_wp[0],
+                                             commands[last_wp[0] - 1])
+                        self.recorder.write(c_str)
+                        t = threading.Thread(
+                            target=self.recorder.write_and_flush)
                         t.start()
                     wp_event.clear()
 
@@ -286,7 +291,8 @@ class Sandbox(BaseSandbox):
 
             outcomes = []
             wp_state[0] = (initial_state, 0.0)
-            mission_passed = timeout # consider mission passed if it doesn't hit timeout
+            # consider mission passed if it doesn't hit timeout
+            mission_passed = timeout
             mission_time = 0.0
             for i in range(len(commands)):
                 cmd_index = 1 + i
@@ -302,12 +308,13 @@ class Sandbox(BaseSandbox):
                         time_elapsed = wp_state[k][1] - wp_state[j][1]
                         break
                 command = commands[i]
-                coverage = self.__get_coverage(directory='command{}'.format(cmd_index))
-                m = recorder_filename+'.cov'
+                directory = 'command{}'.format(cmd_index)
+                coverage = self.__get_coverage(directory=directory)
+                m = recorder_filename + '.cov'
                 with open(m, 'a') as f:
                     f.write('Command #{}: {}\n'.format(cmd_index, command))
                     f.write('{}\n'.format(str(coverage)))
-                # determine which spec the system should observe
+#                determine which spec the system should observe
 #                spec = command.resolve(state_before, env, config)
 #                postcondition = spec.postcondition
 #                passed = postcondition.is_satisfied(command,
@@ -329,12 +336,12 @@ class Sandbox(BaseSandbox):
             return MissionOutcome(mission_passed, outcomes, mission_time)
 
     def update(self, message: Message) -> None:
-        #logger.debug("UPDATE")
+        # logger.debug("UPDATE")
         with self.__state_lock:
             self.__state = self.__state.evolve(message,
                                                self.running_time,
                                                self.connection)
-            #logger.debug("S: %s", self.state)
+            # logger.debug("S: %s", self.state)
             if self.recorder:
                 self.recorder.add(self.__state)
 
@@ -346,7 +353,8 @@ class Sandbox(BaseSandbox):
 
         bzc = self._bugzoo.containers
         rm_cmd = 'cd /opt/ardupilot/ && find . -name *.gcda | xargs rm'
-        cp_cmd = 'cd /tmp/{}/ardupilot && find . -name *.gcda -exec cp --parents \\{{\\}} /opt/ardupilot \\;'.format(directory)
+        cp_cmd = 'cd /tmp/{}/ardupilot && find . -name *.gcda -exec cp --parents \\{{\\}} /opt/ardupilot \\;'  # noqa: pycodestyle
+        cp_cmd = cp_cmd.format(directory)
 
         bzc.command(self.container, rm_cmd, block=True)
         bzc.command(self.container, cp_cmd, block=True)
@@ -363,7 +371,8 @@ class Sandbox(BaseSandbox):
 
         bzc = self._bugzoo.containers
         ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
-        mv_cmd = 'find . -name *.gcda -exec cp --parents \\{{\\}} /tmp/{}/ \\;'.format(directory)
+        mv_cmd = 'find . -name *.gcda -exec cp --parents \\{{\\}} /tmp/{}/ \\;'
+        mv_cmd = mv_cmd.format(directory)
         rm_cmd = 'find . -name *.gcda | xargs rm'
 
         out = bzc.command(self.container, ps_cmd, block=True, stdout=True)
@@ -374,9 +383,13 @@ class Sandbox(BaseSandbox):
                 continue
             n, c = p.split(' ')
             if c.startswith('/opt/ardupilot'):
-                bzc.command(self.container, "kill -10 {}".format(n), block=True)
+                bzc.command(self.container,
+                            "kill -10 {}".format(n),
+                            block=True)
                 break
-        #coverage = self._bugzoo.coverage.extract(self.container)
-        bzc.command(self.container, "mkdir /tmp/{}".format(directory), block=True)
+        # coverage = self._bugzoo.coverage.extract(self.container)
+        bzc.command(self.container,
+                    "mkdir /tmp/{}".format(directory),
+                    block=True)
         bzc.command(self.container, mv_cmd, block=True)
         bzc.command(self.container, rm_cmd, block=True)
