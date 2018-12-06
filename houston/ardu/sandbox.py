@@ -232,18 +232,20 @@ class Sandbox(BaseSandbox):
                 message = m.message
                 if name == 'MISSION_ITEM_REACHED':
                     logger.debug("**MISSION_ITEM_REACHED: %d", message.seq)
-#                    with wp_lock:
-#                        last_wp[0] = int(message.seq)
-#                        wp_event.set()
+                    if message.seq == len(cmds) - 1:
+                        logger.debug("Last item reached")
+                        with wp_lock:
+                            last_wp[1] = int(message.seq) + 1
+                            wp_event.set()
                 elif name == 'MISSION_CURRENT':
                     logger.debug("**MISSION_CURRENT: {}".format(message.seq))
                     logger.debug("STATE: {}".format(self.state))
-                    if message.seq != last_wp[0]:
+                    if message.seq > last_wp[1]:
                         with wp_lock:
-                            if message.seq == last_wp[0]:
-                                return
-                            last_wp[1] = message.seq
-                            wp_event.set()
+                            if message.seq > last_wp[0]:
+                                last_wp[1] = message.seq
+                                logger.debug("SET EVENT")
+                                wp_event.set()
                 elif name == 'MISSION_ACK':
                     logger.debug("**MISSION_ACK: {}".format(message.type))
 
@@ -268,7 +270,7 @@ class Sandbox(BaseSandbox):
             time_start = timer()
 
             timeout = True
-            while last_wp[0] < len(cmds) - 1:
+            while last_wp[0] <= len(cmds) - 1:
                 # allow a single command to run for 10 minutes
                 timeout = wp_event.wait(600)
                 if not timeout:
@@ -276,6 +278,7 @@ class Sandbox(BaseSandbox):
                     break
                 with wp_lock:
                     # self.observe()
+                    logger.debug("last_wp: %s len: %d", str(last_wp), len(cmds))
                     self.__copy_coverage_files("command{}".format(last_wp[0]))
                     logger.debug("STATE: {}".format(self.state))
                     current_time = timer()
@@ -295,6 +298,7 @@ class Sandbox(BaseSandbox):
 
             self.connection.remove_hook('reached')
             self.unset_recorder()
+            logger.debug("Removed hook")
 
             outcomes = []
             wp_state[0] = (initial_state, 0.0)
