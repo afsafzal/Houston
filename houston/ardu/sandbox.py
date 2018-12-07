@@ -278,7 +278,9 @@ class Sandbox(BaseSandbox):
                     break
                 with wp_lock:
                     # self.observe()
-                    logger.debug("last_wp: %s len: %d", str(last_wp), len(cmds))
+                    logger.debug("last_wp: %s len: %d",
+                                 str(last_wp),
+                                 len(cmds))
                     self.__copy_coverage_files("command{}".format(last_wp[0]))
                     logger.debug("STATE: {}".format(self.state))
                     current_time = timer()
