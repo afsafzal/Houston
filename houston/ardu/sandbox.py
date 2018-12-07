@@ -105,6 +105,7 @@ class Sandbox(BaseSandbox):
         the vehicle running inside the simulation. Blocks until SITL is
         launched and a connection is established.
         """
+        # TODO make it optional to compile with coverage
         self._bugzoo.coverage.instrument(self.container)
 
         bzc = self._bugzoo.containers
@@ -121,7 +122,6 @@ class Sandbox(BaseSandbox):
         ip = str(bzc.ip_address(self.container))
         url = "{}:{}:{}".format(protocol, ip, port)
 
-        logger.debug("Not waiting")
         dummy_connection = mavutil.mavlink_connection(url)
         time.sleep(10)
         dummy_connection.close()
