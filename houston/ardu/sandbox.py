@@ -414,10 +414,10 @@ class Sandbox(BaseSandbox):
         for p in all_processes:
             if not p:
                 continue
-            n, c = p.split(' ')
-            if c.startswith('/opt/ardupilot'):
+            pid, cmd = p.split(' ')
+            if cmd.startswith('/opt/ardupilot'):
                 bzc.command(self.container,
-                            "kill -10 {}".format(n),
+                            "kill -10 {}".format(pid),
                             block=True)
                 break
         # coverage = self._bugzoo.coverage.extract(self.container)

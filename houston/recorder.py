@@ -1,6 +1,6 @@
-__all__ = ['Recorder']
+__all__ = ['Recorder', 'NoFileSetError']
 
-from typing import Type, FrozenSet, Dict, Any, List
+from typing import Type, FrozenSet, Dict, Any, List, Optional
 import attr
 import logging
 
@@ -24,11 +24,11 @@ class NoFileSetError(BaseException):
 
 class Recorder(object):
     """
-    Describes a Recorder object that keeps tracks of states
-    created in the execution and writes them to files.
+    Recorders are used to keep tracks of states
+    created in the execution and write them to files.
     """
     def __init__(self,
-                 states: List[State] = None,
+                 states: Optional[List[State]] = None,
                  filename: str = ''
                  ) -> None:
         self.__states = states if states else []

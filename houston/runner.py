@@ -1,4 +1,5 @@
 from typing import Optional, Tuple
+import logging
 
 import threading
 import time
@@ -7,6 +8,9 @@ from bugzoo.client import Client as BugZooClient
 
 from .util import TimeoutError, printflush
 from .mission import Mission
+
+logger = logging.getLogger(__name__)   # type: logging.Logger
+logger.setLevel(logging.DEBUG)
 
 
 class MissionRunner(threading.Thread):
@@ -34,22 +38,26 @@ class MissionRunner(threading.Thread):
         Continues to process jobs.
         """
         while True:
-            i, m = self.__pool.fetch()
-            if m is None:
+            index, mission = self.__pool.fetch()
+            if mission is None:
                 return
 
             if self.__with_coverage:
                 # FIXME
                 raise NotImplementedError
             else:
-                recorder_filename = "record/mission#{}.jsn".format(i)\
-                    if self.__record else None  # FIXME
-                print("Running mission #{}".format(i))
-                outcome = m.run(self.__bz,
-                                self.__snapshot_name,
-                                recorder_filename)
+                if self.__record:
+                    # FIXME
+                    recorder_filename = "record/mission#{}.jsn"
+                    recorder_filename = recorder_filename.format(index)
+                else:
+                    recorder_filename = None
+                logger.info("Running mission #{}".format(index))
+                outcome = mission.run(self.__bz,
+                                      self.__snapshot_name,
+                                      recorder_filename)
                 coverage = None
-            self.__pool.report(m, outcome, coverage)
+            self.__pool.report(mission, outcome, coverage)
 
     def shutdown(self):
         return
