@@ -302,12 +302,10 @@ class Sandbox(BaseSandbox):
                     if recorder_filename:
                         cm_directory = "command{}".format(last_wp[0])
                         self.__copy_coverage_files(cm_directory)
-                        c_str = "Command #{}: {}\n"
-                        c_str = c_str.format(last_wp[0],
-                                             commands[last_wp[0] - 1])
-                        self.recorder.write(c_str)
+                        args = (last_wp[0], commands[last_wp[0] - 1])
                         t = threading.Thread(
-                            target=self.recorder.write_and_flush)
+                            target=self.recorder.write_and_flush,
+                            args=args)
                         threads.append(t)
                         t.start()
                     last_wp[0] = last_wp[1]

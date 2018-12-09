@@ -8,6 +8,7 @@ import json
 import threading
 
 from .state import State
+from .command import Command
 
 logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
@@ -48,7 +49,10 @@ class Recorder(object):
         with self.__lock:
             self.__states.append(state)
 
-    def write_and_flush(self) -> List[Dict[str, Any]]:
+    def write_and_flush(self,
+                        command: Command,
+                        index: int
+                        ) -> List[Dict[str, Any]]:
         if not self.filename:
             raise NoFileSetError()
         with self.__lock:
@@ -56,9 +60,11 @@ class Recorder(object):
             self.__states = []
         with self.__file_lock:
             with open(self.filename, 'a') as f:
-                for s in states:
-                    json.dump(s, f)
-                    f.write('\n')
+                info = {'command': command.to_dict(),
+                        'index': index,
+                        'states': states}
+                json.dump(info, f)
+                f.write('\n')
         return states
 
     def flush(self) -> List[State]:
