@@ -52,10 +52,16 @@ class MissionRunner(threading.Thread):
                     recorder_filename = recorder_filename.format(index)
                 else:
                     recorder_filename = None
-                logger.info("Running mission #{}".format(index))
+                logger.info("Running mission #%d", index)
+                start_time = time.time()
                 outcome = mission.run(self.__bz,
                                       self.__snapshot_name,
                                       recorder_filename)
+                logger.info("Finished running mission %d in %f seconds."
+                            " Passed: %s",
+                            index,
+                            time.time() - start_time,
+                            outcome.passed)
                 coverage = None
             self.__pool.report(mission, outcome, coverage)
 

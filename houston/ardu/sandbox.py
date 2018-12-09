@@ -284,8 +284,8 @@ class Sandbox(BaseSandbox):
 
             not_reached_timeout = True
             while last_wp[0] <= len(cmds) - 1:
-                # allow a single command to run for 10 minutes
-                not_reached_timeout = wp_event.wait(600)
+                # allow a single command to run for 5 minutes
+                not_reached_timeout = wp_event.wait(300)
                 if not not_reached_timeout:
                     logger.error("Timeout occured %d", last_wp[0])
                     break
@@ -302,7 +302,7 @@ class Sandbox(BaseSandbox):
                     if recorder_filename:
                         cm_directory = "command{}".format(last_wp[0])
                         self.__copy_coverage_files(cm_directory)
-                        args = (last_wp[0], commands[last_wp[0] - 1])
+                        args = (commands[last_wp[0] - 1], last_wp[0])
                         t = threading.Thread(
                             target=self.recorder.write_and_flush,
                             args=args)
@@ -323,6 +323,7 @@ class Sandbox(BaseSandbox):
             mission_passed = not_reached_timeout
             mission_time = 0.0
             for i in range(len(commands)):
+                command = commands[i]
                 cmd_index = 1 + i
                 state_before = None
                 for j in range(cmd_index - 1, -1, -1):
@@ -334,7 +335,6 @@ class Sandbox(BaseSandbox):
                     time_elapsed = \
                         wp_to_state[cmd_index][1] - wp_to_state[j][1]
                     if recorder_filename:
-                        command = commands[i]
                         directory = 'command{}'.format(cmd_index)
                         coverage = self.__get_coverage(directory=directory)
                         m = recorder_filename + '.cov'
