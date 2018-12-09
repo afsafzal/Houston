@@ -40,7 +40,7 @@ def run_single_mission_with_coverage(sandbox, mission):
     print("Done")
     print(coverage)
 
-### Run all missions stored to a json file
+### Run all missions stored in a JSON file
 def run_all_missions(bz, snapshot_name, sut, mission_file, coverage=False, record=True):
     missions = []
     with open(mission_file, "r") as f:

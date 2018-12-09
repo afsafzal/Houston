@@ -105,7 +105,7 @@ class Sandbox(BaseSandbox):
         the vehicle running inside the simulation. Blocks until SITL is
         launched and a connection is established.
         """
-        # TODO make it optional to compile with coverage
+        # TODO make it optional to compile with coverage (#146)
         self._bugzoo.coverage.instrument(self.container)
 
         bzc = self._bugzoo.containers
@@ -189,6 +189,14 @@ class Sandbox(BaseSandbox):
         """
         Executes a mission, represented as a sequence of commands, and
         returns a description of the outcome.
+
+        Parameters:
+            commands: the list of commands to be sent to the robot as
+                a mission.
+            recorder_filename: the path and filename of the file that
+                the status of the robot while executing each command
+                is recorded to. If set to None, states will not be
+                recorded. Example: "/tmp/recorder/mission#1"
         """
         logger.debug("Recorder filename: %s, Mission: %s",
                      recorder_filename, str(commands))
@@ -208,6 +216,7 @@ class Sandbox(BaseSandbox):
             #                         10, -1, -1, -1,
             #                         0, 0, 0)
 
+            # convertin from Houston commands to dronekit commands
             cmds = [cmd.to_message().to_dronekit_command()
                     for cmd in commands]
             cmds.insert(0, initial)
@@ -221,24 +230,27 @@ class Sandbox(BaseSandbox):
             logger.debug("Mission uploaded")
             vcmds.wait_ready()
 
+            # maps each wp to the final state and time when wp was reached
+            wp_to_state = {}  # Dict[int, Tuple[State, float]]
+            # [wp that has last been reached, wp running at the moment]
+            last_wp = [0, 0]
+            # used to synchronize rw to last_wp
             wp_lock = threading.Lock()
+            # is set whenever a command in mission is done
             wp_event = threading.Event()
 
-            wp_state = {}  # Dict[int, Tuple[State, float]]
-            last_wp = [0, 0]
-
-            def reached(m):
+            def check_for_reached(m):
                 name = m.name
                 message = m.message
                 if name == 'MISSION_ITEM_REACHED':
                     logger.debug("**MISSION_ITEM_REACHED: %d", message.seq)
                     if message.seq == len(cmds) - 1:
-                        logger.debug("Last item reached")
+                        logger.info("Last item reached")
                         with wp_lock:
                             last_wp[1] = int(message.seq) + 1
                             wp_event.set()
                 elif name == 'MISSION_CURRENT':
-                    logger.debug("**MISSION_CURRENT: {}".format(message.seq))
+                    logger.debug("**MISSION_CURRENT: %d", message.seq)
                     logger.debug("STATE: {}".format(self.state))
                     if message.seq > last_wp[1]:
                         with wp_lock:
@@ -247,9 +259,9 @@ class Sandbox(BaseSandbox):
                                 logger.debug("SET EVENT")
                                 wp_event.set()
                 elif name == 'MISSION_ACK':
-                    logger.debug("**MISSION_ACK: {}".format(message.type))
+                    logger.debug("**MISSION_ACK: %s", message.type)
 
-            self.connection.add_hooks({'reached': reached})
+            self.connection.add_hooks({'check_for_reached': check_for_reached})
 
             self.vehicle.armed = True
             while not self.vehicle.armed:
@@ -257,6 +269,7 @@ class Sandbox(BaseSandbox):
                 time.sleep(0.1)
                 self.vehicle.armed = True
 
+            threads = []
             if recorder_filename:
                 self.set_recorder(recorder_filename)
 
@@ -269,61 +282,69 @@ class Sandbox(BaseSandbox):
             logger.debug("sent mission start message to vehicle")
             time_start = timer()
 
-            timeout = True
+            not_reached_timeout = True
             while last_wp[0] <= len(cmds) - 1:
                 # allow a single command to run for 10 minutes
-                timeout = wp_event.wait(600)
-                if not timeout:
+                not_reached_timeout = wp_event.wait(600)
+                if not not_reached_timeout:
                     logger.error("Timeout occured %d", last_wp[0])
                     break
                 with wp_lock:
                     # self.observe()
-                    logger.debug("last_wp: %s len: %d",
-                                 str(last_wp),
-                                 len(cmds))
-                    self.__copy_coverage_files("command{}".format(last_wp[0]))
+                    logger.info("last_wp: %s len: %d",
+                                str(last_wp),
+                                len(cmds))
                     logger.debug("STATE: {}".format(self.state))
                     current_time = timer()
                     time_passed = current_time - time_start
-                    wp_state[last_wp[0]] = (self.state, time_passed)
+                    wp_to_state[last_wp[0]] = (self.state, time_passed)
                     time_start = current_time
                     if recorder_filename:
+                        cm_directory = "command{}".format(last_wp[0])
+                        self.__copy_coverage_files(cm_directory)
                         c_str = "Command #{}: {}\n"
                         c_str = c_str.format(last_wp[0],
                                              commands[last_wp[0] - 1])
                         self.recorder.write(c_str)
                         t = threading.Thread(
                             target=self.recorder.write_and_flush)
+                        threads.append(t)
                         t.start()
                     last_wp[0] = last_wp[1]
                     wp_event.clear()
 
-            self.connection.remove_hook('reached')
+            self.connection.remove_hook('check_for_reached')
             self.unset_recorder()
             logger.debug("Removed hook")
+            for t in threads:
+                t.join()
 
             outcomes = []
-            wp_state[0] = (initial_state, 0.0)
+            wp_to_state[0] = (initial_state, 0.0)
             # consider mission passed if it doesn't hit timeout
-            mission_passed = timeout
+            mission_passed = not_reached_timeout
             mission_time = 0.0
             for i in range(len(commands)):
                 cmd_index = 1 + i
                 state_before = None
                 for j in range(cmd_index - 1, -1, -1):
-                    if j in wp_state:
-                        state_before = wp_state[j][0]
+                    if j in wp_to_state:
+                        state_before = wp_to_state[j][0]
                         break
-                if cmd_index in wp_state:
-                    state_after = wp_state[cmd_index][0]
-                    time_elapsed = wp_state[cmd_index][1] - wp_state[j][1]
-                    command = commands[i]
-                    directory = 'command{}'.format(cmd_index)
-                    coverage = self.__get_coverage(directory=directory)
-                    m = recorder_filename + '.cov'
-                    with open(m, 'a') as f:
-                        f.write('Command #{}: {}\n'.format(cmd_index, command))
-                        f.write('{}\n'.format(str(coverage)))
+                if cmd_index in wp_to_state:
+                    state_after = wp_to_state[cmd_index][0]
+                    time_elapsed = \
+                        wp_to_state[cmd_index][1] - wp_to_state[j][1]
+                    if recorder_filename:
+                        command = commands[i]
+                        directory = 'command{}'.format(cmd_index)
+                        coverage = self.__get_coverage(directory=directory)
+                        m = recorder_filename + '.cov'
+                        with open(m, 'a') as f:
+                            cm_line = 'Command #{}: {}\n'
+                            cm_line = cm_line.format(cmd_index, command)
+                            f.write(cm_line)
+                            f.write('{}\n'.format(str(coverage)))
                 else:
                     state_after = state_before
                     time_elapsed = 0.0
@@ -364,7 +385,6 @@ class Sandbox(BaseSandbox):
         Copies gcda files from /tmp/<directory> to /opt/ardupilot
         (where the source code is) and collects coverage results.
         """
-
         bzc = self._bugzoo.containers
         rm_cmd = 'cd /opt/ardupilot/ && find . -name *.gcda | xargs rm'
         cp_cmd = 'cd /tmp/{}/ardupilot && find . -name *.gcda -exec cp --parents \\{{\\}} /opt/ardupilot \\;'  # noqa: pycodestyle
@@ -382,7 +402,6 @@ class Sandbox(BaseSandbox):
         container. They will flush gcov data into gcda files that
         will be copied to /tmp/<directory> for later use.
         """
-
         bzc = self._bugzoo.containers
         ps_cmd = 'ps aux | grep -i sitl | awk {\'"\'"\'print $2,$11\'"\'"\'}'
         mv_cmd = 'find . -name *.gcda -exec cp --parents \\{{\\}} /tmp/{}/ \\;'
