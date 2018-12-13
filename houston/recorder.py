@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)  # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
 
-class NoFileSetError(BaseException):
+# TODO Exception to Houston Exception (#147)
+class NoFileSetError(Exception):
     """
     Thrown when writing to file is requested but filename is not
     set.

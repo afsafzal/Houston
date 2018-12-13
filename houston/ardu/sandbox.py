@@ -314,6 +314,7 @@ class Sandbox(BaseSandbox):
             self.connection.remove_hook('check_for_reached')
             self.unset_recorder()
             logger.debug("Removed hook")
+            # TODO make sure deadlocks are not possible here
             for t in threads:
                 t.join()
 
