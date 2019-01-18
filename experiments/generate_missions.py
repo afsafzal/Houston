@@ -48,7 +48,6 @@ def generate(num_missions: int,
     missions = mission_generator.generate(None, resource_limits)
     with open(output_file, "w") as f:
         mission_descriptions = list(map(Mission.to_dict, missions))
-        print(mission_descriptions)
         json.dump(mission_descriptions, f, indent=2)
 
 

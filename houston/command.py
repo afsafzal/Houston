@@ -106,7 +106,7 @@ class CommandMeta(type):
         except KeyError:
             na = ['*']
 
-        # FIXME build a FrozenDict
+        # FIXME
         ns['next_allowed'] = na
 
         # build specifications
