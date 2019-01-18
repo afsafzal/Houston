@@ -12,6 +12,7 @@ from ..command import Command
 logger = logging.getLogger(__name__)   # type: logging.Logger
 logger.setLevel(logging.DEBUG)
 
+
 class RandomMissionGenerator(MissionGenerator):
     def __init__(self,
                  system: Type[System],
@@ -60,7 +61,7 @@ class RandomMissionGenerator(MissionGenerator):
             raise Exception("No TAKEOFF command found")
         commands = [self.generate_command(takeoff)]
         for i in range(self.rng.randint(1, self.max_num_commands - 1)):
-            na = commands[i-1].__class__.get_next_allowed(self.system)
+            na = commands[i - 1].__class__.get_next_allowed(self.system)
             if na:
                 command_class = self.rng.choice(na)
                 commands.append(self.generate_command(command_class))

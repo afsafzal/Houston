@@ -47,7 +47,7 @@ def create_command(command: Dict[str, Any]) -> Type[Command]:
         msg = "missing 'id' field of Command"
         raise TypeError(msg)
     next_allowed = command.get('next-allowed')
-    if next_allowed == None:
+    if next_allowed is None:
         next_allowed = ['*']
     generator = command.get('generator')
     parameters = {}  # type: Dict[str, Union[int, Tuple[str, Parameter]]]
