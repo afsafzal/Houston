@@ -146,10 +146,10 @@ def matches_ground_truth(
             mid = max(vals) - ((max(vals) - min(vals)) / 2)
 #            tolerance = (max(vals) - min(vals)) / 2
 #            tolerance *= tolerance_factor
+            tolerance = all_vars[var].noise or 0.0
             diff = abs(mid - actual)
-#            is_nearly_eq = np.isclose(mid, actual,
-#                                      rtol=1e-05, atol=tolerance, equal_nan=False)
-            is_nearly_eq = all_vars[var].eq(mid, actual)
+            is_nearly_eq = np.isclose(mid, actual,
+                                      rtol=1e-05, atol=tolerance, equal_nan=False)
             # logger.debug("%d:%s (%.9f +/-%.9f)", i, var, mid, tolerance)
             logger.debug("parameter [%s]: |%f - %f| = %f",
                          var, mid, actual, diff)
