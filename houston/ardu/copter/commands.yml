@@ -105,9 +105,11 @@ commands:
             max: 15.0
   - name: MAV_CMD_NAV_RETURN_TO_LAUNCH
     id: 20
+    next-allowed: []
   - name: MAV_CMD_NAV_LAND
     id: 21
     generator: circle_based_generator
+    next-allowed: []
     p5:
         name: lat
         value:
@@ -159,6 +161,7 @@ commands:
 #  - name: MAV_CMD_DO_JUMP
   - name: MAV_CMD_DO_SET_MODE
     id: 176
+    next-allowed: []
     p1:
         name: mode
         value:
