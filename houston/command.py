@@ -223,7 +223,7 @@ class Command(object, metaclass=CommandMeta):
         if not cls.next_allowed:
             return []
         if cls.next_allowed[0] == '*':  # all allowed
-            return list(system.commands.values())
+            return [v for k, v in system.commands.items() if k not in cls.next_allowed[1:]]
         allowed = [system.commands[n] for n in cls.next_allowed]
         return allowed
 
