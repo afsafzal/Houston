@@ -24,10 +24,10 @@ class State(BaseState):
                    noise=0.5)
     latitude = var(float,
                    lambda c: c.conn.location.global_relative_frame.lat,  # noqa: pycodestyle
-                   noise=0.001)
+                   noise=0.0001)
     longitude = var(float,
                     lambda c: c.conn.location.global_relative_frame.lon,  # noqa: pycodestyle
-                    noise=0.001)
+                    noise=0.0001)
     armable = var(bool, lambda c: c.conn.is_armable)
     armed = var(bool, lambda c: c.conn.armed)
     mode = var(str, lambda c: c.conn.mode.name)
