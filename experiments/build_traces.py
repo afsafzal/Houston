@@ -12,6 +12,7 @@ import logging
 import contextlib
 import functools
 import signal, psutil
+import time
 
 import bugzoo
 import bugzoo.server
@@ -28,7 +29,7 @@ DESCRIPTION = "Builds trace files for a given set of missions."
 SandboxFactory = Callable[[bugzoo.BugZoo, bugzoo.Bug, houston.Mission], Iterator[houston.Sandbox]]
 
 
-def kill_child_processes(parent_pid, sig=signal.SIGINT):
+def kill_child_processes(parent_pid, sig=signal.SIGTERM):
     try:
         parent = psutil.Process(parent_pid)
     except psutil.NoSuchProcess:
@@ -170,8 +171,8 @@ def build_traces(client_bugzoo: bugzoo.Client,
                 logger.debug("Cancelled: %s", fut.cancelled())
             logger.info("Waiting for running jobs to complete.")
             logger.info("DO NOT EXIT!")
+            e.shutdown(wait=False)
             kill_child_processes(os.getpid())
-            e.shutdown(wait=True)
             logger.info("Cancelled all jobs and shutdown executor.")
             client_bugzoo.containers.clear()
             logger.info("Killed all containers")
