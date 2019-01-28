@@ -11,6 +11,7 @@ import json
 import logging
 import contextlib
 import functools
+import signal, psutil
 
 import bugzoo
 import bugzoo.server
@@ -25,6 +26,20 @@ logger.setLevel(logging.DEBUG)
 DESCRIPTION = "Builds trace files for a given set of missions."
 
 SandboxFactory = Callable[[bugzoo.BugZoo, bugzoo.Bug, houston.Mission], Iterator[houston.Sandbox]]
+
+
+def kill_child_processes(parent_pid, sig=signal.SIGINT):
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        return
+    children = parent.children(recursive=True)
+    for process in children:
+        if process.name() != "python":
+            continue
+        logger.debug("killing process %d", process.pid)
+        logger.debug("name: %s", process.name())
+        process.send_signal(sig)
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -88,6 +103,7 @@ def trace(index: int,
     except (ConnectionLostError, NoConnectionError):
         logger.error("SITL crashed during trace %d: %s", index, uid)
     except (KeyboardInterrupt, SystemExit):
+        logger.exception("received keyboard interrupt")
         raise
     except:
         logger.exception("failed to build trace %d: %s", index, uid)
@@ -110,8 +126,10 @@ def build_sandbox(client_bugzoo: bugzoo.Client,
                                        mission.configuration) as sandbox:
             yield sandbox
     finally:
+        logger.debug("finally")
         if container:
             del client_bugzoo.containers[container.uid]
+            logger.debug("killed container")
 
 
 def build_traces(client_bugzoo: bugzoo.Client,
@@ -149,11 +167,14 @@ def build_traces(client_bugzoo: bugzoo.Client,
             for fut in futures:
                 logger.debug("Cancelling: %s", fut)
                 fut.cancel()
-                logger.debug("Cancelled: %s", fut)
+                logger.debug("Cancelled: %s", fut.cancelled())
             logger.info("Waiting for running jobs to complete.")
             logger.info("DO NOT EXIT!")
+            kill_child_processes(os.getpid())
             e.shutdown(wait=True)
             logger.info("Cancelled all jobs and shutdown executor.")
+            client_bugzoo.containers.clear()
+            logger.info("Killed all containers")
 
 
 if __name__ == '__main__':
