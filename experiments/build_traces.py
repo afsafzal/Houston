@@ -12,7 +12,6 @@ import logging
 import contextlib
 import functools
 import signal, psutil
-import time
 
 import bugzoo
 import bugzoo.server
@@ -39,7 +38,6 @@ def kill_child_processes(parent_pid, sig=signal.SIGTERM):
         if process.name() != "python":
             continue
         logger.debug("killing process %d", process.pid)
-        logger.debug("name: %s", process.name())
         process.send_signal(sig)
 
 
@@ -127,10 +125,8 @@ def build_sandbox(client_bugzoo: bugzoo.Client,
                                        mission.configuration) as sandbox:
             yield sandbox
     finally:
-        logger.debug("finally")
         if container:
             del client_bugzoo.containers[container.uid]
-            logger.debug("killed container")
 
 
 def build_traces(client_bugzoo: bugzoo.Client,
