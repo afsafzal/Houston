@@ -29,7 +29,7 @@ class MissionGeneratorStream(object):
         """
         return self
 
-    def __next__(self):
+    def __next__(self, **kwargs):
         """
         Requests the next mission from the mission generator.
         """
@@ -38,7 +38,7 @@ class MissionGeneratorStream(object):
             g.tick()
             if g.exhausted():
                 raise StopIteration
-            mission = self.__generator.generate_mission()
+            mission = self.__generator.generate_mission(**kwargs)
             g.tick()
             g.resource_usage.num_missions += 1
             mission_num = g.resource_usage.num_missions
@@ -205,7 +205,8 @@ class MissionGenerator(object):
 
     def generate(self,
                  seed: int,
-                 resource_limits: ResourceLimits
+                 resource_limits: ResourceLimits,
+                 **kwargs
                  ) -> List[Mission]:
         """
         Generate missions and return them
@@ -219,7 +220,7 @@ class MissionGenerator(object):
             self.tick()
             # TODO use threads
             while True:
-                mission = stream.__next__()
+                mission = stream.__next__(**kwargs)
                 missions.append(mission)
         except StopIteration:
             logger.info("Done with generating missions")

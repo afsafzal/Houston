@@ -45,7 +45,7 @@ def generate(num_missions: int,
     config = build_config(speedup)
     mission_generator = RandomMissionGenerator(sut, initial, environment, config, max_num_commands=max_num_commands)
     resource_limits = ResourceLimits(num_missions)
-    missions = mission_generator.generate(None, resource_limits)
+    missions = mission_generator.generate(seed, resource_limits)
     with open(output_file, "w") as f:
         mission_descriptions = list(map(Mission.to_dict, missions))
         json.dump(mission_descriptions, f, indent=2)
