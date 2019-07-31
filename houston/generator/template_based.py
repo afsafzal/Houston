@@ -25,12 +25,30 @@ class FailedMissionGenerationException(HoustonException):
 
 @attr.s
 class CommandTemplate:
+    """
+    A CommandTemplate describes template for a set of commands.
+    """
+
     cmd = attr.ib(type=str)
     repeats = attr.ib(type=int)
     params = attr.ib(type=Optional[Dict[str, Any]], default=None)
 
     @staticmethod
     def from_str(template_str: str) -> 'CommandTemplate':
+        """
+        Creates a CommandTemplate based on provided template
+        string. The template should take the following format:
+            `<COMMAND NAME>(<FIXED PARAMETERS>)^<NUMBER OF REPEATS>`
+        Example:
+            `TAKEOFF(alt: 10.3)^2` which means template is for
+            two `TAKEOFF` commands with parameter `alt` set to 10.3
+        Providing the parameters and number of repeats are
+        optional. By default, number of repeats is set to 1. If `*`
+        is provided as number of repeates, it will be dynamically
+        decided. If command name is provided as `.` it means any
+        possible command.
+        """
+
         regex = r"(?P<cmd>[a-zA-Z\.\_]+)(?P<params>\(.*\))?(?P<repeats>\^[\d\*]*)?"  # noqa: pycodestyle
         matched = re.fullmatch(regex, template_str.strip())
         if not matched:
@@ -63,6 +81,11 @@ class CommandTemplate:
 
 
 class TemplateBasedMissionGenerator(MissionGenerator):
+    """
+    Given a template for intended missions, this generator
+    generates missions.
+    """
+
     def __init__(self,
                  system: Type[System],
                  initial_state: State,
@@ -104,22 +127,34 @@ class TemplateBasedMissionGenerator(MissionGenerator):
         return g(self.rng)
 
     def generate_mission(self, template: str):
+        """
+        A list of CommandTemplate strings separated by `-`
+        should be provided as template.
+        Example:
+            TAKEOFF(alt: 10.3)-.^*-LAND-.^1
+
+        raises:
+            FailedMissionGenerationException:
+                It failed to generate a mission for this
+                template.
+        """
         command_templates = [CommandTemplate.from_str(t)
                              for t in template.split("-")]
-        logger.info("COMMANDS: %s", command_templates)
         cmds_len = self.max_num_commands
         cmds_len -= sum([c.repeats for c in command_templates
                          if c.repeats > 0])
         command_classes = list(self.system.commands.values())
         for tries in range(50):
+            # try at most 50 times to generate a mission
             commands = []
             max_nonfixed_commands = cmds_len
             try:
                 for ct in command_templates:
                     r = ct.repeats
                     if r <= 0:
+                        # number of repeats between 0 and max allowed
                         r = self.rng.randint(0, max_nonfixed_commands)
-                    for i in range(r):
+                    for _ in range(r):
                         if commands:
                             next_allowed = commands[-1].__class__.get_next_allowed(self.system)  # noqa: pycodestyle
                         else:
@@ -132,7 +167,7 @@ class TemplateBasedMissionGenerator(MissionGenerator):
 
                         if not next_allowed:
                             if ct.repeats > 0:
-                                logger.debug("So far %s", commands)
+                                # logger.debug("So far %s", commands)
                                 commands = []
                                 raise FailedMissionGenerationException
                             else:
