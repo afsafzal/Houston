@@ -386,6 +386,7 @@ class Command(object, metaclass=CommandMeta):
         command = cls(**params)
         return command
 
+
 @attr.s(frozen=True)
 class CommandOutcome(object):
     """

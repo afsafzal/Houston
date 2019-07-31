@@ -31,7 +31,7 @@ class CommandTemplate:
 
     @staticmethod
     def from_str(template_str: str) -> 'CommandTemplate':
-        regex = "(?P<cmd>[a-zA-Z\.\_]+)(?P<params>\(.*\))?(?P<repeats>\^[\d\*]*)?"
+        regex = r"(?P<cmd>[a-zA-Z\.\_]+)(?P<params>\(.*\))?(?P<repeats>\^[\d\*]*)?"  # noqa: pycodestyle
         matched = re.fullmatch(regex, template_str.strip())
         if not matched:
             logger.error("Template is wrong %s", template_str)
@@ -104,12 +104,12 @@ class TemplateBasedMissionGenerator(MissionGenerator):
         return g(self.rng)
 
     def generate_mission(self, template: str):
-        command_templates = [CommandTemplate.from_str(t) \
-            for t in template.split("-")]
+        command_templates = [CommandTemplate.from_str(t)
+                             for t in template.split("-")]
         logger.info("COMMANDS: %s", command_templates)
         cmds_len = self.max_num_commands
-        cmds_len -= sum([c.repeats for c in command_templates \
-            if c.repeats > 0])
+        cmds_len -= sum([c.repeats for c in command_templates
+                         if c.repeats > 0])
         command_classes = list(self.system.commands.values())
         for tries in range(50):
             commands = []
@@ -117,17 +117,18 @@ class TemplateBasedMissionGenerator(MissionGenerator):
             try:
                 for ct in command_templates:
                     r = ct.repeats
-                    if r <=0:
+                    if r <= 0:
                         r = self.rng.randint(0, max_nonfixed_commands)
                     for i in range(r):
                         if commands:
                             next_allowed = commands[-1].__class__.get_next_allowed(self.system)  # noqa: pycodestyle
                         else:
-                            next_allowed = [cc for cc in command_classes] # Everything is allowed
+                            # everything is allowed
+                            next_allowed = [cc for cc in command_classes]
 
                         if ct.cmd != '.':
-                            next_allowed = [cc for cc in next_allowed \
-                                if ct.cmd in cc.uid]
+                            next_allowed = [cc for cc in next_allowed
+                                            if ct.cmd in cc.uid]
 
                         if not next_allowed:
                             if ct.repeats > 0:
@@ -138,7 +139,8 @@ class TemplateBasedMissionGenerator(MissionGenerator):
                                 break
                         params = ct.params or {}
                         command_class = self.rng.choice(next_allowed)
-                        commands.append(self.generate_command(command_class, params))
+                        commands.append(self.generate_command(command_class,
+                                                              params))
                         if ct.repeats <= 0:
                             max_nonfixed_commands -= 1
                 break
