@@ -31,7 +31,7 @@ class CommandTemplate:
 
     @staticmethod
     def from_str(template_str: str) -> 'CommandTemplate':
-        regex = "(?P<cmd>[a-zA-Z\.]+)(?P<params>\(.*\))?(?P<repeats>\^[\d\*]*)?"
+        regex = "(?P<cmd>[a-zA-Z\.\_]+)(?P<params>\(.*\))?(?P<repeats>\^[\d\*]*)?"
         matched = re.fullmatch(regex, template_str.strip())
         if not matched:
             logger.error("Template is wrong %s", template_str)
@@ -91,10 +91,14 @@ class TemplateBasedMissionGenerator(MissionGenerator):
         """
         return self.__env
 
-    def generate_command(self, command_class: Type[Command]) -> Command:
+    def generate_command(self,
+                         command_class: Type[Command],
+                         params: Dict[str, Any]
+                         ) -> Command:
         generator = self.command_generator(command_class)
         if generator is None:
-            return command_class.generate(self.rng)
+            return command_class.generate_fixed_params(params,
+                                                       self.rng)
         # g = generator.generate_action_without_state
         # return g(self.system, self.__env, self.rng)
         return g(self.rng)
@@ -131,8 +135,9 @@ class TemplateBasedMissionGenerator(MissionGenerator):
                                 raise FailedMissionGenerationException
                             else:
                                 break
+                        params = ct.params or {}
                         command_class = self.rng.choice(next_allowed)
-                        commands.append(self.generate_command(command_class))
+                        commands.append(self.generate_command(command_class, params))
                 break
             except FailedMissionGenerationException:
                 logger.debug("Try %d failed", tries)

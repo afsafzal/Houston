@@ -372,6 +372,19 @@ class Command(object, metaclass=CommandMeta):
         command = cls(**params)
         return command
 
+    @classmethod
+    def generate_fixed_params(cls,
+                              fixed_params: Dict[str, Any],
+                              rng: random.Random
+                              ) -> 'Command':
+        params = {}
+        for p in cls.parameters:
+            if p.name in fixed_params.keys():
+                params[p.name] = fixed_params[p.name]
+            else:
+                params[p.name] = p.generate(rng)
+        command = cls(**params)
+        return command
 
 @attr.s(frozen=True)
 class CommandOutcome(object):
