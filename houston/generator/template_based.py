@@ -10,9 +10,17 @@ from ..state import State
 from ..environment import Environment
 from ..configuration import Configuration
 from ..command import Command
+from ..exceptions import HoustonException
 
 logger = logging.getLogger(__name__)   # type: logging.Logger
 logger.setLevel(logging.DEBUG)
+
+
+class FailedMissionGenerationException(HoustonException):
+    """
+    Thrown whenever the mission generation fails to follow the
+    template.
+    """
 
 
 @attr.s
@@ -95,24 +103,38 @@ class TemplateBasedMissionGenerator(MissionGenerator):
         command_templates = [CommandTemplate.from_str(t) \
             for t in template.split("-")]
         logger.info("COMMANDS: %s", command_templates)
-        raise Exception
-        command_classes = list(self.system.commands.values())
-        takeoff = None
-        for c in command_classes:
-            if "MAV_CMD_NAV_TAKEOFF" in c.uid:
-                takeoff = c
-                break
-        if not takeoff:
-            raise Exception("No TAKEOFF command found")
-        commands = [self.generate_command(takeoff)]
         cmds_len = self.max_num_commands
-        for i in range(1, cmds_len):
-            next_allowed = commands[i - 1].__class__.get_next_allowed(self.system)  # noqa: pycodestyle
-            if next_allowed:
-                command_class = self.rng.choice(next_allowed)
-                commands.append(self.generate_command(command_class))
-            else:
+        cmds_len -= sum([c.repeats for c in command_templates \
+            if c.repeats > 0])
+        command_classes = list(self.system.commands.values())
+        for tries in range(50):
+            commands = []
+            try:
+                for ct in command_templates:
+                    r = ct.repeats
+                    if r <=0:
+                        r = min(cmds_len, self.max_num_commands - len(commands))
+                    for i in range(r):
+                        if commands:
+                            next_allowed = commands[-1].__class__.get_next_allowed(self.system)  # noqa: pycodestyle
+                        else:
+                            next_allowed = [cc for cc in command_classes] # Everything is allowed
+
+                        if ct.cmd != '.':
+                            next_allowed = [cc for cc in next_allowed \
+                                if ct.cmd in cc.uid]
+
+                        if not next_allowed and ct.repeats > 0:
+                            logger.debug("So far %s", commands)
+                            raise FailedMissionGenerationException
+                        command_class = self.rng.choice(next_allowed)
+                        commands.append(self.generate_command(command_class))
                 break
+            except FailedMissionGenerationException:
+                logger.debug("Try %d failed", tries)
+                continue
+        logger.info("Generated mission: %s", commands)
+        raise Exception
         return Mission(self.__configuration,
                        self.__env,
                        self.__initial_state,

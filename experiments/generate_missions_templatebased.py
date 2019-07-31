@@ -23,6 +23,8 @@ def parse_args():
                        help='number of missions to be generated.')
     parser.add_argument('max_num_commands', type=int, action='store',
                         help='maximum number of commands in a single mission.')
+    parser.add_argument('template', type=str, action='store',
+                        help='template of the mission.')
     parser.add_argument('--speedup', action='store', type=int,
                         default=1,
                         help='simulation speedup that should be used')
@@ -39,14 +41,15 @@ def generate(num_missions: int,
              max_num_commands: int,
              seed: int,
              output_file: str,
-             speedup: int
+             speedup: int,
+             template: str
              ) -> None:
     random.seed(seed)
     config = build_config(speedup)
     mission_generator = TemplateBasedMissionGenerator(sut, initial, environment, config, max_num_commands=max_num_commands)
     resource_limits = ResourceLimits(num_missions)
     missions = mission_generator.generate(seed, resource_limits,
-                template='TAKEOFF(alt:5.2)-.^*-LAND^2-.^1')
+                template=template)
     with open(output_file, "w") as f:
         mission_descriptions = list(map(Mission.to_dict, missions))
         json.dump(mission_descriptions, f, indent=2)
@@ -59,4 +62,5 @@ if __name__ == "__main__":
              max_num_commands=args.max_num_commands,
              seed=args.seed,
              output_file=args.output,
-             speedup=args.speedup)
+             speedup=args.speedup,
+             template=args.template)
