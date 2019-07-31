@@ -124,15 +124,21 @@ class TemplateBasedMissionGenerator(MissionGenerator):
                             next_allowed = [cc for cc in next_allowed \
                                 if ct.cmd in cc.uid]
 
-                        if not next_allowed and ct.repeats > 0:
-                            logger.debug("So far %s", commands)
-                            raise FailedMissionGenerationException
+                        if not next_allowed:
+                            if ct.repeats > 0:
+                                logger.debug("So far %s", commands)
+                                commands = []
+                                raise FailedMissionGenerationException
+                            else:
+                                break
                         command_class = self.rng.choice(next_allowed)
                         commands.append(self.generate_command(command_class))
                 break
             except FailedMissionGenerationException:
                 logger.debug("Try %d failed", tries)
                 continue
+        if not commands:
+            raise FailedMissionGenerationException("Mission generation failed")
         logger.info("Generated mission: %s", commands)
         raise Exception
         return Mission(self.__configuration,
