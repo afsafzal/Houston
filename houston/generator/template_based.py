@@ -113,11 +113,12 @@ class TemplateBasedMissionGenerator(MissionGenerator):
         command_classes = list(self.system.commands.values())
         for tries in range(50):
             commands = []
+            max_nonfixed_commands = cmds_len
             try:
                 for ct in command_templates:
                     r = ct.repeats
                     if r <=0:
-                        r = min(cmds_len, self.max_num_commands - len(commands))
+                        r = self.rng.randint(0, max_nonfixed_commands)
                     for i in range(r):
                         if commands:
                             next_allowed = commands[-1].__class__.get_next_allowed(self.system)  # noqa: pycodestyle
@@ -138,6 +139,8 @@ class TemplateBasedMissionGenerator(MissionGenerator):
                         params = ct.params or {}
                         command_class = self.rng.choice(next_allowed)
                         commands.append(self.generate_command(command_class, params))
+                        if ct.repeats <= 0:
+                            max_nonfixed_commands -= 1
                 break
             except FailedMissionGenerationException:
                 logger.debug("Try %d failed", tries)
@@ -145,7 +148,6 @@ class TemplateBasedMissionGenerator(MissionGenerator):
         if not commands:
             raise FailedMissionGenerationException("Mission generation failed")
         logger.info("Generated mission: %s", commands)
-        raise Exception
         return Mission(self.__configuration,
                        self.__env,
                        self.__initial_state,
