@@ -184,7 +184,7 @@ class TemplateBasedMissionGenerator(MissionGenerator):
                 continue
         if not commands:
             raise FailedMissionGenerationException("Mission generation failed")
-        logger.info("Generated mission: %s", commands)
+        logger.debug("Generated mission: %s", commands)
         return Mission(self.__configuration,
                        self.__env,
                        self.__initial_state,
