@@ -74,6 +74,7 @@ if __name__ == "__main__":
                  seed=args.seed,
                  speedup=args.speedup,
                  template=args.t)
+        mission_descriptions = list(map(Mission.to_dict, missions))
     elif args.f:
         templates = []
         with open(args.f, "r") as f:
@@ -83,28 +84,32 @@ if __name__ == "__main__":
                 if not template:
                     continue
                 if isinstance(template, str):
-                    templates.append((template, args.number_of_mission))
+                    templates.append((template, args.number_of_mission, m['uid']))
                 elif isinstance(template, list):
                     n_missions = args.number_of_mission
                     for i, t in enumerate(template):
                         if i == len(template)-1:
-                            templates.append((t, n_missions))
+                            templates.append((t, n_missions, m['uid']))
                         else:
                             r = random.randint(0, n_missions)
-                            templates.append((t, r))
+                            templates.append((t, r, m['uid']))
                             n_missions -= r
         logger.info("Number of templates: %d", len(templates))
         logger.info("AAAA %s", templates)
-        missions = []
-        for template, num in templates:
-            missions.extend(generate(num_missions=num,
+        mission_descriptions = []
+        for template, num, uid in templates:
+            missions = generate(num_missions=num,
                      max_num_commands=args.max_num_commands,
                      seed=args.seed,
                      speedup=args.speedup,
-                     template=template))
+                     template=template)
+            for n in missions:
+                new_dict = n.to_dict()
+                new_dict['mutant'] = uid
+                mission_descriptions.append(new_dict)
     else:
         raise Exception("Provide either -t or -f")
 
+    logger.info("Total number of missions: %d", len(mission_descriptions))
     with open(args.output, "w") as f:
-        mission_descriptions = list(map(Mission.to_dict, missions))
         json.dump(mission_descriptions, f, indent=2)

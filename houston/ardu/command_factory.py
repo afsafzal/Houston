@@ -27,8 +27,12 @@ def circle_based_generator(cls: Type[Command],
     destination = dist.destination(origin, heading)
 
     prob_zero = 0.1  # the probability of generating 0.0 as the parameter value
-    params['lat'] = destination.latitude if rng.random() >= prob_zero else 0.0
-    params['lon'] = destination.longitude if rng.random() >= prob_zero else 0.0
+    if rng.random() >= prob_zero:
+        params['lat'] = destination.latitude
+        params['lon'] = destination.longitude
+    else:
+        params['lat'] = 0.0
+        params['lon'] = 0.0
 
     command = cls(**params)
     return command

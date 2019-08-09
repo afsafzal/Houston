@@ -377,12 +377,13 @@ class Command(object, metaclass=CommandMeta):
                               fixed_params: Dict[str, Any],
                               rng: random.Random
                               ) -> 'Command':
+        new_cmd = cls.generate(rng)
         params = {}
-        for p in cls.parameters:
+        for p in new_cmd:
             if p.name in fixed_params.keys():
                 params[p.name] = fixed_params[p.name]
             else:
-                params[p.name] = p.generate(rng)
+                params[p.name] = new_cmd[p.name]
         command = cls(**params)
         return command
 
